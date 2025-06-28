@@ -4,7 +4,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
 
 const Model = () => {
-  const gltf = useGLTF('https://drive.google.com/file/d/1wJcfWx6devU38w88UbVNUVfseMhnUmx3/view?usp=drive_link') // public folderdə saxla
+  const gltf = useGLTF('/models/myModel.glb') // public folderdə saxla
   return <primitive object={gltf.scene} scale={1} />
 }
 
