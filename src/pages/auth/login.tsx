@@ -1,45 +1,65 @@
-import React from "react";
+import React, { useState } from 'react'
+import { FaEye, FaEyeSlash } from 'react-icons/fa'
 
 const Login = () => {
+  const [showPassword, setShowPassword] = useState(false)
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#161616]">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          Login to RustBerry
-        </h2>
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="w-full p-2 mt-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+    <div className='min-h-screen flex items-center justify-center p-4 bg-[var(--bg)]'>
+      <div className='w-full max-w-md'>
+        <div className='text-center mb-8'>
+          <h2 className='text-3xl font-light text-amber-200 mb-2'>
+            Login to <span className='font-bold text-white'>RustBerry</span>
+          </h2>
+          <p className='text-gray-500'>Welcome back to your AI workspace</p>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full p-2 mt-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+        <div className='bg-white rounded-lg shadow-sm p-8'>
+          <form className='space-y-5'>
+            <div>
+              <label htmlFor="email" className='block text-sm font-medium text-gray-700 mb-1'>Email</label>
+              <input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                className='w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-yellow-500'
+              />
+            </div>
 
-          <button
-            type="submit"
-            className="w-full bg-black hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition"
-          >
-            Log In
-          </button>
-        </form>
+            <div className='relative'>
+              <label htmlFor="password" className='block text-sm font-medium text-gray-700 mb-1'>Password</label>
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                className='w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-yellow-500 pr-10'
+              />
+              <button
+                type='button'
+                onClick={() => setShowPassword(!showPassword)}
+                className='absolute right-3 top-9 text-gray-400 hover:text-yellow-600'
+                tabIndex={-1}
+              >
+                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              </button>
+            </div>
+
+            <button
+              type='submit'
+              className='w-full bg-black hover:bg-yellow-600 text-white py-2.5 rounded-md font-medium transition-colors'
+            >
+              Log In
+            </button>
+          </form>
+
+          <div className='mt-6 text-center text-sm text-gray-500'>
+            Don't have an account?{' '}
+            <a href="/auth/register" className='font-medium text-yellow-600 hover:underline'>Sign Up</a>
+          </div>
+        </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Login;
+export default Login

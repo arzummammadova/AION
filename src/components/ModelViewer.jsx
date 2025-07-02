@@ -12,7 +12,7 @@ const ModelViewer = () => {
   return (
     <div className="w-full h-[90%] mt-7">
       <Canvas>
-        <ambientLight intensity={0.1} />
+        <ambientLight intensity={0.5} />
         <directionalLight position={[1, 1, 1]} />
         <Suspense fallback={null}>
           <Model />
