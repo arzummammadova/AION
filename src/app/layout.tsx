@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "RustBerry",
+  title: "AION",
   description: "Pomodoro Task Manager",
 };
 

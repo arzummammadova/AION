@@ -7,7 +7,7 @@ const ForgotPassword = () => {
       <div className='w-full max-w-md'>
         <div className='text-center mb-8'>
           <h2 className='text-3xl font-light text-amber-200 mb-2'>
-            Forgot Password for <span className='font-bold text-white'>RustBerry</span>
+            Forgot Password for <span className='font-bold text-white'>AION</span>
           </h2>
           <p className='text-gray-500'>Enter your email to reset your password</p>
         </div>

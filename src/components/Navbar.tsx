@@ -8,8 +8,7 @@ export default function Navbar() {
     <div className="bg-[#161616] w-full fixed text-white p-5">
       <div className="container mx-auto flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold">
-          RustBerry
-          e
+        AION
         </Link>
         
         <div className="space-x-4">

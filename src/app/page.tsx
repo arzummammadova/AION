@@ -7,11 +7,11 @@ export default function Home() {
       <div className="bg-[url('/images/bg-3.jpg')] bg-cover bg-center w-full h-screen">
         <div className="flex justify-center items-center flex-col mx-auto h-screen px-6">
           <h1 className="text-white text-3xl md:text-5xl text-center font-bold">
-            Welcome to RustBerry
+            Welcome to AION
           </h1>
 
           <p className="text-center mt-4 text-sm md:text-base text-gray-400 max-w-md md:max-w-xl">
-            A Rust-based web application for managing your daily tasks.
+            A AION web application for managing your daily tasks.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full sm:w-auto justify-center items-center">
