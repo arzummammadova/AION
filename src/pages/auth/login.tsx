@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import React, { useState } from 'react'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 
@@ -51,6 +52,10 @@ const Login = () => {
               Log In
             </button>
           </form>
+          <Link className='text-sm flex justify-end mt-3' href="/auth/forgotpassword">
+            Forgot password?
+          </Link>
+
 
           <div className='mt-6 text-center text-sm text-gray-500'>
             Don't have an account?{' '}

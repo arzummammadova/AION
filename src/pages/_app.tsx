@@ -9,7 +9,8 @@ import '../app/globals.css';
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
-  const hideLayoutRoutes = ['/auth/login'];
+  const hideLayoutRoutes = ['/auth/login','/auth/register','/auth/forgotpassword','/auth/resetpassword'];
+
 
   const shouldHideLayout = hideLayoutRoutes.includes(router.pathname);
 
