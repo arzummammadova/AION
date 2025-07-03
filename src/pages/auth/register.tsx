@@ -26,7 +26,7 @@ const Register: React.FC = () => {
     setMessage('')
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', form)
+      const res = await axios.post('https://aion-api.onrender.com/api/auth/register', form)
       setMessage(res.data.message)
       setForm({ username: '', email: '', password: '' })
     } catch (err: any) {
