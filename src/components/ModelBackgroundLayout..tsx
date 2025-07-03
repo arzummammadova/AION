@@ -2,7 +2,7 @@
 import React from 'react'
 import ModelViewer from './ModelViewer'
 
-const ModelBackgroundLayout = ({ children }) => {
+const ModelBackgroundLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="relative min-h-screen">
       {/* 3D Model fixed background */}
