@@ -15,15 +15,48 @@ const Register: React.FC = () => {
     email: '',
     password: '',
   })
+  const [errors, setErrors] = useState<Partial<FormData>>({})
   const [message, setMessage] = useState<string>('')
+
+  const validate = (): boolean => {
+    const newErrors: Partial<FormData> = {}
+
+    if (!form.username.trim()) {
+      newErrors.username = 'İstifadəçi adı boş ola bilməz'
+    } else if (form.username.length < 3) {
+      newErrors.username = 'İstifadəçi adı ən azı 3 simvol olmalıdır'
+    } else if (form.username.length > 20) {
+      newErrors.username = 'İstifadəçi adı maksimum 20 simvol ola bilər'
+    }
+
+    if (!form.email.trim()) {
+      newErrors.email = 'Email boş ola bilməz'
+    } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      newErrors.email = 'Düzgün email daxil edin'
+    }
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-={}[\]|:;"'<>,.?/~`]).{8,20}$/
+    if (!form.password.trim()) {
+      newErrors.password = 'Şifrə boş ola bilməz'
+    } else if (!passwordRegex.test(form.password)) {
+      newErrors.password =
+        'Şifrə ən azı 1 böyük hərf, 1 rəqəm və 1 simvol içerməli və 8-20 simvol arası olmalıdır'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.id]: e.target.value }))
+    setErrors(prev => ({ ...prev, [e.target.id]: '' })) // Clear specific error
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setMessage('')
+
+    if (!validate()) return
 
     try {
       const res = await axios.post('https://aion-api.onrender.com/api/auth/register', form)
@@ -45,7 +78,7 @@ const Register: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm p-8">
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Username
@@ -55,9 +88,11 @@ const Register: React.FC = () => {
                 type="text"
                 value={form.username}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-white"
-                required
+                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                  errors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
+                }`}
               />
+              {errors.username && <p className="text-sm text-red-600 mt-1">{errors.username}</p>}
             </div>
 
             <div>
@@ -69,9 +104,11 @@ const Register: React.FC = () => {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-yellow-500"
-                required
+                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
+                }`}
               />
+              {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
             </div>
 
             <div className="relative">
@@ -83,8 +120,9 @@ const Register: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-yellow-500 pr-10"
-                required
+                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-1 pr-10 ${
+                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
+                }`}
               />
               <button
                 type="button"
@@ -94,6 +132,7 @@ const Register: React.FC = () => {
               >
                 {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
               </button>
+              {errors.password && <p className="text-sm text-red-600 mt-1">{errors.password}</p>}
             </div>
 
             <button
@@ -104,7 +143,9 @@ const Register: React.FC = () => {
             </button>
           </form>
 
-          {message && <p className="mt-4 text-center text-sm text-gray-600">{message}</p>}
+          {message && (
+            <p className="mt-4 text-center text-sm text-green-600 font-medium">{message}</p>
+          )}
 
           <div className="mt-6 text-center text-sm text-gray-500">
             Already have an account?{' '}
