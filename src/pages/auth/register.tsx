@@ -59,7 +59,7 @@ const Register: React.FC = () => {
     if (!validate()) return
 
     try {
-     const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, form)
+     const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, form)
 
       setMessage(res.data.message)
       setForm({ username: '', email: '', password: '' })
@@ -121,6 +121,7 @@ const Register: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={handleChange}
+                placeholder='••••••••'
                 className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-1 pr-10 ${
                   errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                 }`}
