@@ -23,7 +23,7 @@ export default function Login() {
   const onSubmit = async (data: LoginInput) => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        `https://aion-api.onrender.com/api/auth/login`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
