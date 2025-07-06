@@ -36,7 +36,7 @@ export default function Login() {
 
       if (!res.ok) throw new Error(result.message || 'Xəta baş verdi');
       // uğurlu giriş
-      router.push('/workspace'); // və ya istənilən səhifə
+      router.push('/'); // və ya istənilən səhifə
     } catch (err: any) {
       alert(err.message);
     }

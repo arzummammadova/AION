@@ -1,12 +1,7 @@
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "AION",
-  description: "Pomodoro Task Manager",
-};
+import Providers from "./providers/Providers";
 
 export default function RootLayout({
   children,
@@ -16,9 +11,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <Providers>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
