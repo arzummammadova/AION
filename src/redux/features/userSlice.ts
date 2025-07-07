@@ -83,6 +83,23 @@ export const otpVerify = createAsyncThunk(
     }
   }
 );
+
+export const resetPassword = createAsyncThunk(
+  'user/resetPassword',
+  async ({ email, password, confirmPassword }: { email: string; password: string; confirmPassword: string }, thunkAPI) => {
+    try {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
+        email,
+        password,
+        confirmPassword,
+      });
+      await thunkAPI.dispatch(logoutUser());
+      return res.data;
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Şifrə sıfırlama zamanı xəta baş verdi.');
+    }
+  }
+);
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -132,6 +149,23 @@ const userSlice = createSlice({
           alert(action.payload.message); // Uğurlu mesajı göstər
         })
         .addCase(otpVerify.rejected, (state, action) => {
+          state.loading = 'failed';
+          state.error = action.payload as string;
+          alert(action.payload as string); // Xəta mesajını göstər
+        })
+        .addCase(resetPassword.pending, (state) => {
+          state.loading = 'loading';
+          state.error = null;
+        })
+        .addCase(resetPassword.fulfilled, (state, action) => {
+          state.loading = 'succeeded';
+          state.user = null; // Şifrə sıfırlandıqdan sonra istifadəçini log out edə bilərsiniz
+          state.error = null;
+          alert(action.payload.message); // Uğurlu mesajı göstər
+          // Buradan istifadəçini login səhifəsinə yönləndirə bilərsiniz:
+          // router.push('/auth/login'); (komponentdə istifadə olunmalıdır)
+        })
+        .addCase(resetPassword.rejected, (state, action) => {
           state.loading = 'failed';
           state.error = action.payload as string;
           alert(action.payload as string); // Xəta mesajını göstər

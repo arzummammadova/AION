@@ -3,13 +3,15 @@ import React, { useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useSearchParams } from 'next/navigation';
 import { otpVerify } from '@/redux/features/userSlice';
+import { useRouter } from 'next/navigation'; 
 
 const OtpVerify = () => {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [otpValues, setOtpValues] = useState(Array(6).fill(''));
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
-  const email = searchParams.get('email'); // Email URL-dən alınır
+  const email = searchParams.get('email'); 
+  const router = useRouter(); 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
@@ -23,7 +25,7 @@ const OtpVerify = () => {
     if (value.length === 0 && index > 0) inputRefs.current[index - 1]?.focus();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => { // Make handleSubmit async
     e.preventDefault();
     const otp = otpValues.join(''); // OTP rəqəmlərini birləşdir
 
@@ -38,7 +40,16 @@ const OtpVerify = () => {
     }
 
     // Redux action-u dispatch et
-    dispatch(otpVerify({ email, otp }) as any); // "as any" tipi müvəqqəti olaraq qaldırır, lakin tipi düzgün təyin etmək daha yaxşıdır.
+    const resultAction = await dispatch(otpVerify({ email, otp }) as any);
+
+    // Check if OTP verification was successful
+    if (otpVerify.fulfilled.match(resultAction)) {
+      // Redirect to the reset-password page with the email
+      router.push(`/auth/reset-password?email=${email}`);
+    } else {
+      // Handle unsuccessful OTP verification (e.g., show an error message)
+      alert('OTP təsdiqlənməsi uğursuz oldu. Zəhmət olmasa kodu yenidən yoxlayın.');
+    }
   };
 
   return (
