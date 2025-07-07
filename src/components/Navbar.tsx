@@ -4,12 +4,13 @@ import { CgProfile } from "react-icons/cg";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store/store";
-import { fetchUser } from "@/redux/features/userSlice";
+import { fetchUser, logoutUser } from "@/redux/features/userSlice";
 import { useEffect } from "react";
 
 export default function Navbar() {
   const dispatch = useDispatch<AppDispatch>();
   const { user, loading } = useSelector((state: RootState) => state.user)
+
   console.log(user);
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,6 +45,8 @@ export default function Navbar() {
             <>
               <p>Xoş gəldin, {user.username}</p>
               <Link href="/profile">Profil</Link>
+              <button onClick={() => dispatch((logoutUser()))}>LogOut</button>
+
             </>
           ) : (
             <div className="space-x-4 flex items-center">
