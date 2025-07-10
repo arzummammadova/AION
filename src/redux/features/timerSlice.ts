@@ -1,6 +1,7 @@
 // src/redux/features/timerSlice.ts
 
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import axiosInstance from '@/utils/axiosInstance';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 interface TimerSession {
@@ -15,6 +16,7 @@ interface TimerSession {
     totalPausedTime: number; 
     createdAt: string;
     updatedAt: string;
+    name?: string;
 }
 
 interface TimerState {
@@ -31,15 +33,15 @@ const initialState: TimerState = {
     error: null,
 };
 
-// --- Async Thunks for Timer API Calls ---
 
 export const startTimerSession = createAsyncThunk(
     'timer/startTimerSession',
-    async (selectedDuration: number, thunkAPI) => {
+    // Artıq `selectedDuration` ilə yanaşı `name` və `note` qəbul edirik
+    async ({ selectedDuration, name, note }: { selectedDuration: number; name?: string; note?: string }, thunkAPI) => {
         try {
             const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/timers/start`, 
-                { selectedDuration },
+                `${process.env.NEXT_PUBLIC_API_URL}/timers/start`,
+                { selectedDuration, name, note }, // Backendə göndər
                 { withCredentials: true }
             );
             return response.data;
@@ -48,7 +50,6 @@ export const startTimerSession = createAsyncThunk(
         }
     }
 );
-
 export const pauseTimerSession = createAsyncThunk(
     'timer/pauseTimerSession',
     async ({ timerId, elapsedTime }: { timerId: string; elapsedTime: number }, thunkAPI) => {
@@ -128,6 +129,35 @@ export const deleteTimerSession = createAsyncThunk(
     }
 );
 
+export const updateTimerSessionDetails = createAsyncThunk(
+    'timer/updateTimerSessionDetails',
+    async ({ timerId, name, note }: { timerId: string; name?: string; note?: string }, thunkAPI) => {
+        try {
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_URL}/timers/${timerId}/details`, // Backend route
+                { name, note },
+                { withCredentials: true }
+            );
+            return response.data;
+        } catch (error: any) {
+            return thunkAPI.rejectWithValue(error.response?.data?.message || 'Taymer məlumatları yenilənə bilmədi.');
+        }
+    }
+);
+
+export const updateTimerSession = createAsyncThunk(
+    'timer/updateTimerSession',
+    async (payload: { timerId: string; name: string }, { rejectWithValue }) => {
+        try {
+            // İndi axiosInstance istifadə edirik
+            const response = await axiosInstance.put(`/timers/${payload.timerId}`, { name: payload.name });
+            return response.data; // Yenilənmiş sessiyanı qaytarır
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || err.message);
+        }
+    }
+);
+
 const timerSlice = createSlice({
     name: 'timer',
     initialState,
@@ -148,14 +178,17 @@ const timerSlice = createSlice({
             })
             .addCase(startTimerSession.fulfilled, (state, action) => {
                 state.loading = 'succeeded';
-                state.currentTimer = action.payload.timerSession || action.payload; 
+                state.currentTimer = action.payload.timerSession || action.payload;
+
+                // Yeni yaradılan taymerin adını düzgün şəkildə əlavə et
+                // Siyahıda tapıb yeniləmək və ya yeni əlavə etmək məntiqi
                 const index = state.timerSessions.findIndex(
                     (session) => session._id === (action.payload.timerSession?._id || action.payload._id)
                 );
                 if (index !== -1) {
                     state.timerSessions[index] = action.payload.timerSession || action.payload;
                 } else {
-                    state.timerSessions.unshift(action.payload.timerSession || action.payload); 
+                    state.timerSessions.unshift(action.payload.timerSession || action.payload);
                 }
             })
             .addCase(startTimerSession.rejected, (state, action) => {
@@ -245,6 +278,48 @@ const timerSlice = createSlice({
                 }
             })
             .addCase(deleteTimerSession.rejected, (state, action) => {
+                state.loading = 'failed';
+                state.error = action.payload as string;
+            })
+             .addCase(updateTimerSessionDetails.pending, (state) => {
+                state.loading = 'pending';
+                state.error = null;
+            })
+            .addCase(updateTimerSessionDetails.fulfilled, (state, action) => {
+                state.loading = 'succeeded';
+                // currentTimer-ı yeniləyə bilərik, əgər redaktə olunan cari taymerdirsə
+                if (state.currentTimer && state.currentTimer._id === (action.payload.timerSession?._id || action.payload._id)) {
+                    state.currentTimer = action.payload.timerSession || action.payload;
+                }
+                // timerSessions siyahısında da yenilə
+                const index = state.timerSessions.findIndex(
+                    (session) => session._id === (action.payload.timerSession?._id || action.payload._id)
+                );
+                if (index !== -1) {
+                    state.timerSessions[index] = action.payload.timerSession || action.payload;
+                }
+            })
+            .addCase(updateTimerSessionDetails.rejected, (state, action) => {
+                state.loading = 'failed';
+                state.error = action.payload as string;
+            })
+            .addCase(updateTimerSession.pending, (state) => {
+                state.loading = 'pending';
+                state.error = null;
+            })
+            .addCase(updateTimerSession.fulfilled, (state, action: PayloadAction<TimerSession>) => {
+                state.loading = 'succeeded';
+                // Yenilənmiş sessiyanı `timerSessions` array-də tapıb yeniləyirik
+                const index = state.timerSessions.findIndex(s => s._id === action.payload._id);
+                if (index !== -1) {
+                    state.timerSessions[index] = action.payload;
+                }
+                // Əgər yenilənən sessiya cari aktiv sessiyadırsa, `currentTimer`-i də yeniləyirik
+                if (state.currentTimer && state.currentTimer._id === action.payload._id) {
+                    state.currentTimer = action.payload;
+                }
+            })
+            .addCase(updateTimerSession.rejected, (state, action) => {
                 state.loading = 'failed';
                 state.error = action.payload as string;
             });
