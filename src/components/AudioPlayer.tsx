@@ -1,18 +1,20 @@
-// src/components/AudioPlayer.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipForward, SkipBack, VolumeX, Volume2, Plus, Minus, Music, List, X } from 'lucide-react';
 
 interface AudioTrack {
-    id: string;
+    _id: string;
     name: string;
-    url: string;
+    artist: string;
+    audioUrl: string;
+    imageUrl?: string;
 }
 
 interface AudioPlayerProps {
     tracks: AudioTrack[];
+    onTracksReorder: (reorderedTracks: AudioTrack[]) => void;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -21,31 +23,36 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
     const [showPlaylist, setShowPlaylist] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
-    // Vurğu: isMinimized default olaraq 'true' olaraq təyin edildi
-    const [isMinimized, setIsMinimized] = useState(true); 
+    const [isMinimized, setIsMinimized] = useState(true);
+    const [reorderedTracks, setReorderedTracks] = useState<AudioTrack[]>(tracks);
 
-    // Track dəyişdikdə və ya yükləndikdə audionu yenilə
     useEffect(() => {
-        if (audioRef.current) {
-            audioRef.current.load(); // Yeni track-i yüklə
+        setReorderedTracks(tracks);
+    }, [tracks]);
+
+    useEffect(() => {
+        if (audioRef.current && reorderedTracks.length > 0) {
+            audioRef.current.src = reorderedTracks[currentTrackIndex].audioUrl;
+            audioRef.current.load();
             if (isPlaying) {
-                audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+                audioRef.current.play().catch(e => console.error("Audio play failed on track change:", e));
             }
+        } else if (audioRef.current && reorderedTracks.length === 0) {
+            audioRef.current.src = '';
+            setIsPlaying(false);
         }
-    }, [currentTrackIndex]);
+    }, [currentTrackIndex, reorderedTracks]);
 
-    // Oynatma statusunu idarə et
     useEffect(() => {
         if (audioRef.current) {
             if (isPlaying) {
-                audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+                audioRef.current.play().catch(e => console.error("Audio play failed on isPlaying change:", e));
             } else {
                 audioRef.current.pause();
             }
         }
     }, [isPlaying]);
 
-    // Səs səviyyəsini idarə et
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.volume = volume;
@@ -53,17 +60,49 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
         }
     }, [volume, isMuted]);
 
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const handleActualPlay = () => {
+            if (!isPlaying) {
+                setIsPlaying(true);
+            }
+        };
+        const handleActualPause = () => {
+            if (isPlaying) {
+                setIsPlaying(false);
+            }
+        };
+
+        const handleEnded = () => {
+            handleNextTrack();
+        };
+
+        audio.addEventListener('play', handleActualPlay);
+        audio.addEventListener('pause', handleActualPause);
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            audio.removeEventListener('play', handleActualPlay);
+            audio.removeEventListener('pause', handleActualPause);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, [isPlaying, reorderedTracks, currentTrackIndex]);
+
     const handlePlayPause = () => {
         setIsPlaying(prev => !prev);
     };
 
-    const handleNextTrack = () => {
-        setCurrentTrackIndex(prevIndex => (prevIndex + 1) % tracks.length);
+    const handleNextTrack = useCallback(() => {
+        if (reorderedTracks.length === 0) return;
+        setCurrentTrackIndex(prevIndex => (prevIndex + 1) % reorderedTracks.length);
         setIsPlaying(true);
-    };
+    }, [reorderedTracks]);
 
     const handlePrevTrack = () => {
-        setCurrentTrackIndex(prevIndex => (prevIndex - 1 + tracks.length) % tracks.length);
+        if (reorderedTracks.length === 0) return;
+        setCurrentTrackIndex(prevIndex => (prevIndex - 1 + reorderedTracks.length) % reorderedTracks.length);
         setIsPlaying(true);
     };
 
@@ -93,7 +132,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
     const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
         if (audioRef.current) {
             const rect = e.currentTarget.getBoundingClientRect();
-            const percent = (e.clientX - rect.right) / rect.width;
+            let clickX = e.clientX - rect.left;
+            let width = rect.width;
+            let percent = Math.max(0, Math.min(1, clickX / width));
+
             const newTime = percent * duration;
             audioRef.current.currentTime = newTime;
             setCurrentTime(newTime);
@@ -107,9 +149,38 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    if (tracks.length === 0) {
+    const handleDragStart = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+        e.dataTransfer.setData("trackIndex", index.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLLIElement>) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLLIElement>, dropIndex: number) => {
+        e.preventDefault();
+        const dragIndex = parseInt(e.dataTransfer.getData("trackIndex"));
+        const newTracks = [...reorderedTracks];
+        const [draggedTrack] = newTracks.splice(dragIndex, 1);
+        newTracks.splice(dropIndex, 0, draggedTrack);
+
+        setReorderedTracks(newTracks);
+        onTracksReorder(newTracks);
+
+        // Adjust currentTrackIndex if the current track was moved
+        if (dragIndex === currentTrackIndex) {
+            setCurrentTrackIndex(dropIndex);
+        } else if (dragIndex < currentTrackIndex && dropIndex >= currentTrackIndex) {
+            setCurrentTrackIndex(prev => prev - 1);
+        } else if (dragIndex > currentTrackIndex && dropIndex <= currentTrackIndex) {
+            setCurrentTrackIndex(prev => prev + 1);
+        }
+    };
+
+
+    if (reorderedTracks.length === 0) {
         return (
-            <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-md border border-gray-700/50 text-white max-w-sm">
+            <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-white max-w-sm">
                 <div className="flex items-center justify-center space-x-3">
                     <Music className="text-gray-400" size={24} />
                     <span className="text-gray-300">Musiqi yoxdur. Zəhmət olmasa siyahıya mahnı əlavə edin.</span>
@@ -118,12 +189,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
         );
     }
 
-    const currentTrack = tracks[currentTrackIndex];
+    const currentTrack = reorderedTracks[currentTrackIndex];
 
     if (isMinimized) {
         return (
-            <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black-900 to-gray-800 p-4 rounded-2xl shadow-2xl backdrop-blur-md border border-gray-700/50 cursor-pointer transition-all duration-300 hover:scale-105"
-                 onClick={() => setIsMinimized(false)}>
+            <div
+                className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-4 rounded-2xl shadow-2xl backdrop-blur-lg border border-gray-700/50 cursor-pointer transition-all duration-300 hover:scale-105"
+                onClick={() => setIsMinimized(false)}
+            >
                 <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
                         <Music className="text-white" size={20} />
@@ -132,23 +205,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
                         <p className="text-white font-medium text-sm truncate max-w-32">
                             {currentTrack.name}
                         </p>
-                        <div className="flex items-center space-x-2 mt-1">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation(); 
-                                    handlePlayPause();
-                                }}
-                                className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                            >
-                                {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-                            </button>
-                            <div className="flex-1 bg-white/20 rounded-full h-1">
-                                <div 
-                                    className="bg-gradient-to-r from-amber-400 to-amber-500 h-1 rounded-full transition-all duration-300"
-                                    style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-                                />
-                            </div>
-                        </div>
+                        <p className="text-gray-400 text-xs truncate max-w-32">
+                            {currentTrack.artist}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -156,177 +215,108 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks }) => {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl shadow-2xl backdrop-blur-md border border-gray-700/50 overflow-hidden max-w-sm z-50">
-            <audio 
-                ref={audioRef} 
-                src={currentTrack.url} 
-                onEnded={handleNextTrack}
+        <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-white max-w-sm">
+            <button
+                onClick={() => setIsMinimized(true)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors duration-200"
+                title="Kiçilt"
+            >
+                <X size={20} />
+            </button>
+
+            <h3 className="text-lg font-bold mb-4 flex items-center justify-center gap-2">
+                <Music size={20} className="text-amber-400" /> Musiqi Playeri
+            </h3>
+
+            <div className="flex items-center space-x-4 mb-4">
+                {currentTrack.imageUrl && (
+                    <img
+                        src={currentTrack.imageUrl}
+                        alt={currentTrack.name}
+                        className="w-16 h-16 rounded-xl object-cover shadow-lg"
+                    />
+                )}
+                <div className="flex-1">
+                    <p className="font-semibold text-lg">{currentTrack.name}</p>
+                    <p className="text-gray-400 text-sm">{currentTrack.artist}</p>
+                </div>
+            </div>
+
+            <audio
+                ref={audioRef}
+                src={currentTrack.audioUrl}
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleTimeUpdate}
+                onEnded={handleNextTrack}
             />
 
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 pb-2">
-                <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
-                        <Music className="text-white" size={24} />
-                    </div>
-                    <div>
-                        <h3 className="text-white font-bold text-lg">Now Playing</h3>
-                        <p className="text-gray-400 text-sm">Track {currentTrackIndex + 1} of {tracks.length}</p>
-                    </div>
-                </div>
+            <div
+                className="w-full bg-gray-700 rounded-full h-1.5 mb-2 cursor-pointer relative"
+                onClick={handleSeek}
+            >
+                <div
+                    className="bg-amber-500 h-1.5 rounded-full absolute top-0 left-0"
+                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                ></div>
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 mb-4">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+            </div>
+
+            <div className="flex items-center justify-center space-x-4 mb-4">
+                <button onClick={handlePrevTrack} className="text-gray-300 hover:text-white transition-colors">
+                    <SkipBack size={28} />
+                </button>
                 <button
-                    onClick={() => setIsMinimized(true)}
-                    className="p-2 rounded-full hover:bg-gray-700/50 text-gray-400 transition-colors"
-                    title="Kiçilt"
+                    onClick={handlePlayPause}
+                    className="bg-amber-500 p-3 rounded-full text-white shadow-lg hover:bg-amber-600 transition-colors"
                 >
-                    <Minus size={20} />
+                    {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+                </button>
+                <button onClick={handleNextTrack} className="text-gray-300 hover:text-white transition-colors">
+                    <SkipForward size={28} />
                 </button>
             </div>
 
-            {/* Track Info */}
-            <div className="px-4 pb-4">
-                <h4 className="text-white font-semibold text-xl mb-2 truncate">
-                    {currentTrack.name}
-                </h4>
-                
-                {/* Progress Bar */}
-                <div className="mb-4">
-                    <div 
-                        className="w-full bg-gray-700 rounded-full h-2 cursor-pointer relative overflow-hidden"
-                        onClick={handleSeek}
-                    >
-                        <div 
-                            className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-300 relative"
-                            style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-                        >
-                            <div className="absolute right-0 top-0 w-3 h-3 bg-white rounded-full -translate-y-0.5 shadow-lg" />
-                        </div>
-                    </div>
-                    <div className="flex justify-between text-gray-400 text-xs mt-1">
-                        <span>{formatTime(currentTime)}</span>
-                        <span>{formatTime(duration)}</span>
-                    </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center justify-center space-x-4 mb-4">
-                    <button
-                        onClick={handlePrevTrack}
-                        className="p-3 rounded-full hover:bg-gray-700/50 text-gray-300 hover:text-white transition-all duration-200"
-                        title="Əvvəlki Mahnı"
-                    >
-                        <SkipBack size={24} />
-                    </button>
-                    <button
-                        onClick={handlePlayPause}
-                        className="p-4 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                        title={isPlaying ? 'Fasilə Ver' : 'Çal'}
-                    >
-                        {isPlaying ? <Pause size={28} /> : <Play size={28} />}
-                    </button>
-                    <button
-                        onClick={handleNextTrack}
-                        className="p-3 rounded-full hover:bg-gray-700/50 text-gray-300 hover:text-white transition-all duration-200"
-                        title="Növbəti Mahnı"
-                    >
-                        <SkipForward size={24} />
-                    </button>
-                </div>
-
-                {/* Volume Control */}
-                <div className="flex items-center justify-center space-x-2 mb-4">
-                    <button
-                        onClick={handleToggleMute}
-                        className="p-2 rounded-full hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors"
-                        title={isMuted ? 'Səsi Aç' : 'Səsi Kəs'}
-                    >
+            <div className="flex items-center justify-between text-gray-300">
+                <div className="flex items-center space-x-2">
+                    <button onClick={handleToggleMute} className="hover:text-white transition-colors">
                         {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
                     </button>
-                    <button
-                        onClick={() => handleVolumeChange('decrease')}
-                        className="p-1 rounded-full hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors"
-                        title="Səsi Azalt"
-                    >
-                        <Minus size={16} />
+                    <button onClick={() => handleVolumeChange('decrease')} className="hover:text-white transition-colors">
+                        <Minus size={20} />
                     </button>
-                    <div className="flex-1 bg-gray-700 rounded-full h-1.5 mx-2">
-                        <div 
-                            className="bg-gradient-to-r from-amber-400 to-amber-500 h-1.5 rounded-full transition-all duration-300"
-                            style={{ width: `${volume * 100}%` }}
-                        />
-                    </div>
-                    <button
-                        onClick={() => handleVolumeChange('increase')}
-                        className="p-1 rounded-full hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors"
-                        title="Səsi Artır"
-                    >
-                        <Plus size={16} />
+                    <span className="w-8 text-center text-sm">{Math.round(volume * 100)}%</span>
+                    <button onClick={() => handleVolumeChange('increase')} className="hover:text-white transition-colors">
+                        <Plus size={20} />
                     </button>
-                    <span className="text-gray-400 text-sm w-10 text-center">{Math.round(volume * 100)}%</span>
                 </div>
-
-                {/* Playlist Toggle */}
-                <button
-                    onClick={() => setShowPlaylist(prev => !prev)}
-                    className="w-full bg-gray-700/50 hover:bg-gray-600/50 text-white py-3 rounded-2xl transition-all duration-200 flex items-center justify-center space-x-2"
-                    title={showPlaylist ? 'Playlisti Gizlə' : 'Playlistə Bax'}
-                >
-                    <List size={20} />
-                    <span>{showPlaylist ? 'Playlisti Gizlə' : 'Playlistə Bax'}</span>
+                <button onClick={() => setShowPlaylist(prev => !prev)} className="hover:text-white transition-colors flex items-center gap-1">
+                    <List size={20} /> Playlist
                 </button>
             </div>
 
-            {/* Playlist */}
             {showPlaylist && (
-                <div className="bg-gray-800/50 border-t border-gray-700/50 max-h-64 overflow-y-auto">
-                    <div className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h5 className="text-white font-semibold">Playlist</h5>
-                            <button
-                                onClick={() => setShowPlaylist(false)}
-                                className="p-1 rounded-full hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors"
-                                title="Playlisti Bağla"
+                <div className="mt-4 max-h-48 overflow-y-auto custom-scrollbar border-t border-gray-700 pt-4">
+                    <h4 className="font-semibold mb-2">Playlist</h4>
+                    <ul>
+                        {reorderedTracks.map((track, index) => (
+                            <li
+                                key={track._id}
+                                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${index === currentTrackIndex ? 'bg-amber-600 text-white' : 'hover:bg-gray-700'}`}
+                                onClick={() => { setCurrentTrackIndex(index); setIsPlaying(true); }}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, index)}
                             >
-                                <X size={16} />
-                            </button>
-                        </div>
-                        <div className="space-y-2">
-                            {tracks.map((track, index) => (
-                                <div
-                                    key={track.id}
-                                    className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                                        index === currentTrackIndex 
-                                            ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30' 
-                                            : 'hover:bg-gray-700/30'
-                                    }`}
-                                    onClick={() => {
-                                        setCurrentTrackIndex(index);
-                                        setIsPlaying(true);
-                                    }}
-                                >
-                                    <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center">
-                                        <span className="text-gray-300 text-sm font-medium">{index + 1}</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`text-sm truncate ${
-                                            index === currentTrackIndex ? 'text-white font-semibold' : 'text-gray-300'
-                                        }`}>
-                                            {track.name}
-                                        </p>
-                                    </div>
-                                    {index === currentTrackIndex && isPlaying && (
-                                        <div className="flex items-center space-x-1">
-                                            <div className="w-1 h-3 bg-amber-500 rounded-full animate-pulse" />
-                                            <div className="w-1 h-2 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                                            <div className="w-1 h-4 bg-amber-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                                <span className="text-sm">{track.name} - {track.artist}</span>
+                                {index === currentTrackIndex && isPlaying && <Play size={16} />}
+                                {index === currentTrackIndex && !isPlaying && <Pause size={16} />}
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             )}
         </div>

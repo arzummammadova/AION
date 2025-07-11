@@ -1,5 +1,7 @@
-// src/pages/index.tsx
+// src/pages/workspace/index.tsx
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { GetServerSideProps } from 'next';
+import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, Trash2, History, X, Edit, Image as ImageIcon } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
@@ -15,12 +17,34 @@ import {
 } from '@/redux/features/timerSlice';
 import SessionNameModal from '@/components/SessionNameModal';
 import HistorySidebar from '@/components/HistorySidebar';
-// import FloatingTimerControls from '@/components/FloatingTimerControls';
-import AudioPlayer from '@/components/AudioPlayer'; // AudioPlayer-i idxal etdik
+import AudioPlayer from '@/components/AudioPlayer';
+import { getTracks } from '@/redux/features/trackSlice';
+
+// --- getServerSideProps funksiyası ---
+export const getServerSideProps: GetServerSideProps = async (context) => {
+    const isAuthenticated = context.req.cookies.token;
+
+    if (!isAuthenticated) {
+        return {
+            redirect: {
+                destination: '/auth/login?alert=not-logged-in',
+                permanent: false,
+            },
+        };
+    }
+
+    return {
+        props: {},
+    };
+};
 
 const Index = () => {
     const dispatch: AppDispatch = useDispatch();
+    const router = useRouter();
     const { currentTimer, timerSessions, loading, error } = useSelector((state: RootState) => state.timer);
+
+    // Track state-i trackSlice-dən gəlir
+    const { tracks: audioTracksFromRedux, loading: tracksLoading, error: tracksError } = useSelector((state: RootState) => state.tracks); // <-- trackSlice-dən mahnıları çəkin
 
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -36,35 +60,29 @@ const Index = () => {
     const endSound = useRef<HTMLAudioElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Musiqi Trekləri Siyahısı (Nümunə)
-    // DİQQƏT: Bu faylların `public` qovluğunda mövcud olduğundan əmin olun.
-    // Məsələn: public/audio/song1.mp3, public/audio/song2.mp3
-    const audioTracks = [
-        { id: '1', name: 'Chill Lofi Beats', url: '/audio/chill-lofi-beats.mp3' },
-        { id: '2', name: 'Relaxing Piano', url: '/audio/relaxing-piano.mp3' },
-        { id: '3', name: 'Ambient Focus', url: '/audio/ambient-focus.mp3' },
-    ];
+    // DİQQƏT: Bu statik audioTracks array-i artıq istifadə olunmayacaq.
+    // AudioPlayer komponentinə Redux-dan gələn `audioTracksFromRedux` ötürüləcək.
+    // const audioTracks = [
+    //     { id: '1', name: 'Chill Lofi Beats', url: '/audio/chill-lofi-beats.mp3' },
+    //     { id: '2', name: 'Potsu', url: '/audio/potsu.mp3' },
+    //     { id: '3', name: 'Moonlight Sonata ', url: '/audio/moonlight.mp3' },
+    // ];
 
-
-    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `isRunning` dəyərini əldə etmək üçün istifadə olunacaq.
     const isRunningRef = useRef(isRunning);
     useEffect(() => {
         isRunningRef.current = isRunning;
     }, [isRunning]);
 
-    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `currentTimer` dəyərini əldə etmək üçün istifadə olunacaq.
     const currentTimerRef = useRef(currentTimer);
     useEffect(() => {
         currentTimerRef.current = currentTimer;
     }, [currentTimer]);
 
-    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `timeLeft` dəyərini əldə etmək üçün istifadə olunacaq.
     const timeLeftRef = useRef(timeLeft);
     useEffect(() => {
         timeLeftRef.current = timeLeft;
     }, [timeLeft]);
 
-    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `initialTime` dəyərini əldə etmək üçün istifadə olunacaq.
     const initialTimeRef = useRef(initialTime);
     useEffect(() => {
         initialTimeRef.current = initialTime;
@@ -73,7 +91,6 @@ const Index = () => {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            // Səs fayllarının yolu düzgün olduğundan əmin olun
             tenSecondWarningSound.current = new Audio('/sounds/ten_second_warning.mp3');
             endSound.current = new Audio('/sounds/stoptime.mp3');
             const storedBackground = localStorage.getItem('pomodoroBackground');
@@ -83,17 +100,21 @@ const Index = () => {
         }
     }, []);
 
+    // Timer sessions-ları çəkmək
     useEffect(() => {
         dispatch(getUserTimerSessions());
     }, [dispatch]);
 
-    // Taymer məlumatlarını Redux state-dən yerli state-ə yükləyir
+    // Mahnıları çəkmək üçün yeni useEffect
+    useEffect(() => {
+        dispatch(getTracks()); // <-- Mahnıları backend-dən çəkin
+    }, [dispatch]);
+
     useEffect(() => {
         if (currentTimer) {
             if (currentTimer.status === 'running') {
                 const now = new Date().getTime();
                 const startTimeMs = new Date(currentTimer.startTime).getTime();
-                // totalPausedTime-ın undefined ola bilmə ehtimalını nəzərə alırıq
                 const totalPausedTime = currentTimer.totalPausedTime || 0;
                 const totalPassedTime = (now - startTimeMs) / 1000;
                 const remaining = (currentTimer.selectedDuration * 60) - (totalPassedTime - totalPausedTime);
@@ -103,10 +124,10 @@ const Index = () => {
             } else if (currentTimer.status === 'paused') {
                 setTimeLeft((currentTimer.selectedDuration * 60) - currentTimer.elapsedTime);
                 setIsRunning(false);
-            } else { // stopped or completed
+            } else {
                 setTimeLeft(0);
                 setIsRunning(false);
-                setInitialTime(0); // Səhifə yeniləndikdə və taymer bitmişsə
+                setInitialTime(0);
                 setConfirmedSessionName('');
             }
             setInitialTime(currentTimer.selectedDuration * 60);
@@ -114,7 +135,6 @@ const Index = () => {
                 setConfirmedSessionName(currentTimer.name);
             }
         } else {
-            // currentTimer null olduqda hər şeyi sıfırla
             setTimeLeft(0);
             setInitialTime(0);
             setIsRunning(false);
@@ -122,7 +142,6 @@ const Index = () => {
         }
     }, [currentTimer]);
 
-    // Taymerin işləmə məntiqi
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
 
@@ -147,7 +166,6 @@ const Index = () => {
                 endSound.current.play();
             }
             if (currentTimer?._id) {
-                const totalElapsedTime = initialTime - timeLeft;
                 dispatch(completeTimerSession({ timerId: currentTimer._id, elapsedTime: initialTime }));
             }
             dispatch(getUserTimerSessions());
@@ -160,17 +178,11 @@ const Index = () => {
         };
     }, [isRunning, timeLeft, initialTime, dispatch, currentTimer]);
 
-    // *** YENİ ƏLAVƏ EDİLMİŞ HİSSƏ: beforeunload hadisəsi ***
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-            // Yalnız taymer işləyirsə və cari sessiya varsa fasilə ver
             if (isRunningRef.current && currentTimerRef.current?._id) {
-                const timerId = currentTimerRef.current._id;
-                const elapsedTime = initialTimeRef.current - timeLeftRef.current;
-
-                // Daha etibarlı, lakin istifadəçidən əlavə təsdiq tələb edən bir həll
                 event.preventDefault();
-                event.returnValue = ''; // Bu xəbərdarlıq mesajının göstərilməsini təmin edir
+                event.returnValue = '';
             }
         };
 
@@ -179,9 +191,7 @@ const Index = () => {
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [dispatch]); // dispatch-ə bağımlı etdik, lakin ref-lər ən son dəyərləri tutacaq.
-
-    // --- Taymer İdarəetmə Funksiyaları ---
+    }, []);
 
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
@@ -190,12 +200,10 @@ const Index = () => {
     };
 
     const setTimerDuration = async (minutes: number) => {
-        // Əgər taymer işləyirsə və ya fasilədədirsə, istifadəçini xəbərdar et
         if (isRunning || (currentTimer && currentTimer.status === 'paused')) {
             if (!window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?")) {
                 return;
             }
-            // Cari taymer aktiv idisə, onu dayandır
             if (currentTimer?._id) {
                 await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime: initialTimeRef.current - timeLeftRef.current }));
             }
@@ -204,9 +212,9 @@ const Index = () => {
         setTimeLeft(seconds);
         setInitialTime(seconds);
         setIsRunning(false);
-        dispatch(clearCurrentTimer()); // Cari timer-ı Redux-da da sıfırla
-        setConfirmedSessionName(''); // Adı da sıfırla
-        dispatch(getUserTimerSessions()); // Sessiyaları yenilə
+        dispatch(clearCurrentTimer());
+        setConfirmedSessionName('');
+        dispatch(getUserTimerSessions());
     };
 
     const handleConfirmNameFromModal = (name: string) => {
@@ -220,12 +228,6 @@ const Index = () => {
     const handleStartPause = async () => {
         if (timeLeft === 0 && initialTime === 0) {
             alert("Zəhmət olmasa bir taymer müddəti seçin.");
-            return;
-        }
-
-        if (!isRunning && !currentTimer && confirmedSessionName === '') {
-            alert("Zəhmət olmasa sessiya adını daxil edib təsdiqləyin.");
-            setIsNameModalOpen(true); // Ad modalını aç
             return;
         }
 
@@ -283,7 +285,7 @@ const Index = () => {
             }
             await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime: initialTime - timeLeft }));
         }
-        setTimeLeft(initialTime); // Yalnız initialTime dəyərinə sıfırla
+        setTimeLeft(initialTime);
         setIsRunning(false);
         dispatch(clearCurrentTimer());
         setConfirmedSessionName('');
@@ -465,9 +467,10 @@ const Index = () => {
                     {confirmedSessionName && (
                         <p className="text-green-400 text-lg font-semibold mt-4">Cari Sessiya Adı: <span className="font-bold">"{confirmedSessionName}"</span></p>
                     )}
+                    {/* You can still offer the "add name" option visually without forcing it */}
                     {!confirmedSessionName && (
                         <div className="flex gap-3 justify-center ">
-                            <span>sessiyana ad ver</span>
+                            <span>Sessiyana ad ver</span>
                             <button
                                 onClick={() => setIsNameModalOpen(true)}
                                 className="text-amber-200 hover:text-amber-300 transition-colors duration-200 mt-2"
@@ -476,7 +479,6 @@ const Index = () => {
                                 <Edit size={28} />
                             </button>
                         </div>
-
                     )}
 
                     <div className="tabs flex flex-col md:flex-row justify-center mt-6 gap-4 w-full items-center">
@@ -557,6 +559,9 @@ const Index = () => {
 
                     {loading === 'pending' && <p className="text-amber-200 mt-4">Əməliyyat icra olunur...</p>}
                     {error && <p className="text-red-500 mt-4">Xəta: {error}</p>}
+                    {/* Mahnı yüklənmə statusu və xətası */}
+                    {tracksLoading === 'pending' && <p className="text-gray-400 mt-2">Musiqi yüklənir...</p>}
+                    {tracksError && <p className="text-red-500 mt-2">Musiqi xətası: {tracksError}</p>}
 
                     {/* Current Timer Session Info */}
                     {currentTimer && (
@@ -575,20 +580,8 @@ const Index = () => {
                 </div>
             </div>
 
-            {/* Floating Timer Controls Component */}
-            {/* <FloatingTimerControls
-                isRunning={isRunning}
-                currentTimer={currentTimer}
-                timeLeft={timeLeft}
-                initialTime={initialTime}
-                handleStartPause={handleStartPause}
-                handleStopTimer={handleStopTimer}
-                handleReset={handleReset}
-                formatTime={formatTime}
-            /> */}
-
-            {/* Audio Player Component */}
-            <AudioPlayer tracks={audioTracks} />
+            {/* Audio Player Component - İndi Redux-dan gələn mahnıları istifadə edir */}
+            <AudioPlayer tracks={audioTracksFromRedux} /> {/* <-- Buranı dəyişdik */}
         </div>
     );
 };
