@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Maximize, Minimize2, RotateCcw, Trash2, Pause, Square, History, X, Edit } from 'lucide-react';
+// src/pages/index.tsx
+import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { Maximize, Minimize2, RotateCcw, Trash2, History, X, Edit, Image as ImageIcon } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import {
@@ -10,10 +11,12 @@ import {
     getUserTimerSessions,
     deleteTimerSession,
     clearCurrentTimer,
-    updateTimerSession, // updateTimerSession-u indi import edirik
+    updateTimerSession,
 } from '@/redux/features/timerSlice';
 import SessionNameModal from '@/components/SessionNameModal';
-import HistorySidebar from '@/components/HistorySidebar'; // Yeni HistorySidebar-ı import edirik
+import HistorySidebar from '@/components/HistorySidebar';
+// import FloatingTimerControls from '@/components/FloatingTimerControls';
+import AudioPlayer from '@/components/AudioPlayer'; // AudioPlayer-i idxal etdik
 
 const Index = () => {
     const dispatch: AppDispatch = useDispatch();
@@ -26,15 +29,57 @@ const Index = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
     const [isNameModalOpen, setIsNameModalOpen] = useState<boolean>(false);
     const [confirmedSessionName, setConfirmedSessionName] = useState<string>('');
+    const [backgroundImage, setBackgroundImage] = useState<string>('');
 
     const fullScreenRef = useRef<HTMLDivElement>(null);
     const tenSecondWarningSound = useRef<HTMLAudioElement | null>(null);
     const endSound = useRef<HTMLAudioElement | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Musiqi Trekləri Siyahısı (Nümunə)
+    // DİQQƏT: Bu faylların `public` qovluğunda mövcud olduğundan əmin olun.
+    // Məsələn: public/audio/song1.mp3, public/audio/song2.mp3
+    const audioTracks = [
+        { id: '1', name: 'Chill Lofi Beats', url: '/audio/chill-lofi-beats.mp3' },
+        { id: '2', name: 'Relaxing Piano', url: '/audio/relaxing-piano.mp3' },
+        { id: '3', name: 'Ambient Focus', url: '/audio/ambient-focus.mp3' },
+    ];
+
+
+    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `isRunning` dəyərini əldə etmək üçün istifadə olunacaq.
+    const isRunningRef = useRef(isRunning);
+    useEffect(() => {
+        isRunningRef.current = isRunning;
+    }, [isRunning]);
+
+    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `currentTimer` dəyərini əldə etmək üçün istifadə olunacaq.
+    const currentTimerRef = useRef(currentTimer);
+    useEffect(() => {
+        currentTimerRef.current = currentTimer;
+    }, [currentTimer]);
+
+    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `timeLeft` dəyərini əldə etmək üçün istifadə olunacaq.
+    const timeLeftRef = useRef(timeLeft);
+    useEffect(() => {
+        timeLeftRef.current = timeLeft;
+    }, [timeLeft]);
+
+    // DİQQƏT: Bu ref dəyəri `beforeunload` hadisəsində ən son `initialTime` dəyərini əldə etmək üçün istifadə olunacaq.
+    const initialTimeRef = useRef(initialTime);
+    useEffect(() => {
+        initialTimeRef.current = initialTime;
+    }, [initialTime]);
+
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
+            // Səs fayllarının yolu düzgün olduğundan əmin olun
             tenSecondWarningSound.current = new Audio('/sounds/ten_second_warning.mp3');
             endSound.current = new Audio('/sounds/stoptime.mp3');
+            const storedBackground = localStorage.getItem('pomodoroBackground');
+            if (storedBackground) {
+                setBackgroundImage(storedBackground);
+            }
         }
     }, []);
 
@@ -42,13 +87,16 @@ const Index = () => {
         dispatch(getUserTimerSessions());
     }, [dispatch]);
 
+    // Taymer məlumatlarını Redux state-dən yerli state-ə yükləyir
     useEffect(() => {
         if (currentTimer) {
             if (currentTimer.status === 'running') {
                 const now = new Date().getTime();
                 const startTimeMs = new Date(currentTimer.startTime).getTime();
+                // totalPausedTime-ın undefined ola bilmə ehtimalını nəzərə alırıq
+                const totalPausedTime = currentTimer.totalPausedTime || 0;
                 const totalPassedTime = (now - startTimeMs) / 1000;
-                const remaining = (currentTimer.selectedDuration * 60) - (totalPassedTime - currentTimer.totalPausedTime);
+                const remaining = (currentTimer.selectedDuration * 60) - (totalPassedTime - totalPausedTime);
 
                 setTimeLeft(Math.max(0, Math.floor(remaining)));
                 setIsRunning(true);
@@ -58,7 +106,7 @@ const Index = () => {
             } else { // stopped or completed
                 setTimeLeft(0);
                 setIsRunning(false);
-                setInitialTime(0);
+                setInitialTime(0); // Səhifə yeniləndikdə və taymer bitmişsə
                 setConfirmedSessionName('');
             }
             setInitialTime(currentTimer.selectedDuration * 60);
@@ -66,6 +114,7 @@ const Index = () => {
                 setConfirmedSessionName(currentTimer.name);
             }
         } else {
+            // currentTimer null olduqda hər şeyi sıfırla
             setTimeLeft(0);
             setInitialTime(0);
             setIsRunning(false);
@@ -73,6 +122,7 @@ const Index = () => {
         }
     }, [currentTimer]);
 
+    // Taymerin işləmə məntiqi
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
 
@@ -98,7 +148,7 @@ const Index = () => {
             }
             if (currentTimer?._id) {
                 const totalElapsedTime = initialTime - timeLeft;
-                dispatch(completeTimerSession({ timerId: currentTimer._id, elapsedTime: totalElapsedTime }));
+                dispatch(completeTimerSession({ timerId: currentTimer._id, elapsedTime: initialTime }));
             }
             dispatch(getUserTimerSessions());
         }
@@ -110,6 +160,29 @@ const Index = () => {
         };
     }, [isRunning, timeLeft, initialTime, dispatch, currentTimer]);
 
+    // *** YENİ ƏLAVƏ EDİLMİŞ HİSSƏ: beforeunload hadisəsi ***
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            // Yalnız taymer işləyirsə və cari sessiya varsa fasilə ver
+            if (isRunningRef.current && currentTimerRef.current?._id) {
+                const timerId = currentTimerRef.current._id;
+                const elapsedTime = initialTimeRef.current - timeLeftRef.current;
+
+                // Daha etibarlı, lakin istifadəçidən əlavə təsdiq tələb edən bir həll
+                event.preventDefault();
+                event.returnValue = ''; // Bu xəbərdarlıq mesajının göstərilməsini təmin edir
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [dispatch]); // dispatch-ə bağımlı etdik, lakin ref-lər ən son dəyərləri tutacaq.
+
+    // --- Taymer İdarəetmə Funksiyaları ---
+
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
@@ -117,18 +190,28 @@ const Index = () => {
     };
 
     const setTimerDuration = async (minutes: number) => {
+        // Əgər taymer işləyirsə və ya fasilədədirsə, istifadəçini xəbərdar et
+        if (isRunning || (currentTimer && currentTimer.status === 'paused')) {
+            if (!window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?")) {
+                return;
+            }
+            // Cari taymer aktiv idisə, onu dayandır
+            if (currentTimer?._id) {
+                await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime: initialTimeRef.current - timeLeftRef.current }));
+            }
+        }
         const seconds = minutes * 60;
         setTimeLeft(seconds);
         setInitialTime(seconds);
         setIsRunning(false);
-        dispatch(clearCurrentTimer());
-        dispatch(getUserTimerSessions());
+        dispatch(clearCurrentTimer()); // Cari timer-ı Redux-da da sıfırla
+        setConfirmedSessionName(''); // Adı da sıfırla
+        dispatch(getUserTimerSessions()); // Sessiyaları yenilə
     };
 
     const handleConfirmNameFromModal = (name: string) => {
         setConfirmedSessionName(name);
         alert(`Sessiya adı təsdiqləndi: "${name}"`);
-        // Eğer cari taymer varsa ve ad değişmişse, updateTimerSession'ı burada da çağırabiliriz
         if (currentTimer && currentTimer.name !== name) {
             dispatch(updateTimerSession({ timerId: currentTimer._id, name: name }));
         }
@@ -142,6 +225,7 @@ const Index = () => {
 
         if (!isRunning && !currentTimer && confirmedSessionName === '') {
             alert("Zəhmət olmasa sessiya adını daxil edib təsdiqləyin.");
+            setIsNameModalOpen(true); // Ad modalını aç
             return;
         }
 
@@ -193,7 +277,13 @@ const Index = () => {
     };
 
     const handleReset = async () => {
-        setTimeLeft(initialTime);
+        if (currentTimer?._id && (isRunning || currentTimer.status === 'paused')) {
+            if (!window.confirm("Cari taymeri sıfırlamaq istədiyinizə əminsiniz? Bu, sessiyanı dayandıracaq və sıfırlayacaq.")) {
+                return;
+            }
+            await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime: initialTime - timeLeft }));
+        }
+        setTimeLeft(initialTime); // Yalnız initialTime dəyərinə sıfırla
         setIsRunning(false);
         dispatch(clearCurrentTimer());
         setConfirmedSessionName('');
@@ -219,7 +309,6 @@ const Index = () => {
         }
     };
 
-    // Sessiyanın adını redaktə etmək üçün funksiya (sidebar üçün)
     const handleEditSessionName = async (timerId: string, currentName: string) => {
         const newName = prompt("Sessiyanın yeni adını daxil edin:", currentName);
         if (newName !== null && newName.trim() !== "") {
@@ -302,6 +391,23 @@ const Index = () => {
         return 'Başlat';
     };
 
+    const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const imageUrl = reader.result as string;
+                setBackgroundImage(imageUrl);
+                localStorage.setItem('pomodoroBackground', imageUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current?.click();
+    };
+
     return (
         <div className="">
             {/* Session Name Modal */}
@@ -328,7 +434,7 @@ const Index = () => {
             <div
                 ref={fullScreenRef}
                 style={{
-                    // backgroundImage: "url('https://wallpaper.dog/large/20470250.png')", // Uncomment if you have a background image
+                    backgroundImage: backgroundImage ? `url('${backgroundImage}')` : 'none',
                     backgroundRepeat: "no-repeat",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
@@ -336,8 +442,14 @@ const Index = () => {
                 }}
                 className='bg-[#161616] text-white flex flex-col items-center justify-center px-4 w-full h-full'
             >
-                {/* Edit Icon for main timer session name */}
-                
+                {/* Hidden file input */}
+                <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                />
 
                 <div
                     className="
@@ -355,16 +467,16 @@ const Index = () => {
                     )}
                     {!confirmedSessionName && (
                         <div className="flex gap-3 justify-center ">
-                            <span>sessiyana ad ver</span>  
-                        <button
-                            onClick={() => setIsNameModalOpen(true)}
-                            className="text-amber-200 hover:text-amber-300 transition-colors duration-200 mt-2"
-                            title="Sessiyaya ad ver"
-                        >
-                          <Edit size={28} />
-                        </button>
-                    </div>
-                      
+                            <span>sessiyana ad ver</span>
+                            <button
+                                onClick={() => setIsNameModalOpen(true)}
+                                className="text-amber-200 hover:text-amber-300 transition-colors duration-200 mt-2"
+                                title="Sessiyaya ad ver"
+                            >
+                                <Edit size={28} />
+                            </button>
+                        </div>
+
                     )}
 
                     <div className="tabs flex flex-col md:flex-row justify-center mt-6 gap-4 w-full items-center">
@@ -414,6 +526,12 @@ const Index = () => {
 
                     {/* Action Buttons */}
                     <div className="flex justify-center items-center mt-4 flex-wrap gap-4">
+                        {/* New: Upload Background Image Button */}
+                        <div className="flex flex-col items-center group">
+                            <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Şəkil Yüklə</div>
+                            <ImageIcon className='cursor-pointer' onClick={triggerFileInput} size={28} />
+                        </div>
+
                         <div className="flex flex-col items-center group">
                             <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Tarixçə</div>
                             <History className='cursor-pointer' onClick={toggleSidebar} size={28} />
@@ -435,20 +553,6 @@ const Index = () => {
                             <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Sıfırla</div>
                             <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} />
                         </div>
-
-                        {isRunning && (
-                            <div className="flex flex-col items-center group">
-                                <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Fasilə</div>
-                                <Pause className='cursor-pointer' onClick={handleStartPause} size={28} />
-                            </div>
-                        )}
-
-                        {(isRunning || currentTimer?.status === 'paused') && (
-                            <div className="flex flex-col items-center group">
-                                <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Dayandır</div>
-                                <Square className='cursor-pointer' onClick={handleStopTimer} size={28} />
-                            </div>
-                        )}
                     </div>
 
                     {loading === 'pending' && <p className="text-amber-200 mt-4">Əməliyyat icra olunur...</p>}
@@ -470,6 +574,21 @@ const Index = () => {
                     )}
                 </div>
             </div>
+
+            {/* Floating Timer Controls Component */}
+            {/* <FloatingTimerControls
+                isRunning={isRunning}
+                currentTimer={currentTimer}
+                timeLeft={timeLeft}
+                initialTime={initialTime}
+                handleStartPause={handleStartPause}
+                handleStopTimer={handleStopTimer}
+                handleReset={handleReset}
+                formatTime={formatTime}
+            /> */}
+
+            {/* Audio Player Component */}
+            <AudioPlayer tracks={audioTracks} />
         </div>
     );
 };
