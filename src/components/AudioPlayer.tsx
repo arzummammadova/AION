@@ -180,10 +180,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
 
     if (reorderedTracks.length === 0) {
         return (
-            <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-white max-w-sm">
+            <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-black max-w-sm">
                 <div className="flex items-center justify-center space-x-3">
-                    <Music className="text-gray-400" size={24} />
-                    <span className="text-gray-300">Musiqi yoxdur. Zəhmət olmasa siyahıya mahnı əlavə edin.</span>
+                    <Music className="text-black" size={24} />
+                    <span className="text-black">Musiqi yoxdur. Zəhmət olmasa siyahıya mahnı əlavə edin.</span>
                 </div>
             </div>
         );
@@ -199,13 +199,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
             >
                 <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
-                        <Music className="text-white" size={20} />
+                        <Music className="text-black" size={20} />
                     </div>
                     <div className="flex-1">
-                        <p className="text-white font-medium text-sm truncate max-w-32">
+                        <p className="text-black font-medium text-sm truncate max-w-32">
                             {currentTrack.name}
                         </p>
-                        <p className="text-gray-400 text-xs truncate max-w-32">
+                        <p className="text-black text-xs truncate max-w-32">
                             {currentTrack.artist}
                         </p>
                     </div>
@@ -215,10 +215,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
     }
 
     return (
-        <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-white max-w-sm">
+        <div className="fixed bottom-6 right-6 bg-gradient-to-b from-[#eeecf2] to-[#E7D8FF] p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-black max-w-sm">
             <button
                 onClick={() => setIsMinimized(true)}
-                className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors duration-200"
+                className="absolute top-2 right-2 text-black hover:text-black transition-colors duration-200"
                 title="Kiçilt"
             >
                 <X size={20} />
@@ -238,7 +238,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
                 )}
                 <div className="flex-1">
                     <p className="font-semibold text-lg">{currentTrack.name}</p>
-                    <p className="text-gray-400 text-sm">{currentTrack.artist}</p>
+                    <p className="text-black text-sm">{currentTrack.artist}</p>
                 </div>
             </div>
 
@@ -259,40 +259,40 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
                     style={{ width: `${(currentTime / duration) * 100}%` }}
                 ></div>
             </div>
-            <div className="flex justify-between text-xs text-gray-400 mb-4">
+            <div className="flex justify-between text-xs text-black mb-4">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
             </div>
 
             <div className="flex items-center justify-center space-x-4 mb-4">
-                <button onClick={handlePrevTrack} className="text-gray-300 hover:text-white transition-colors">
+                <button onClick={handlePrevTrack} className="text-black hover:text-black transition-colors">
                     <SkipBack size={28} />
                 </button>
                 <button
                     onClick={handlePlayPause}
-                    className="bg-amber-500 p-3 rounded-full text-white shadow-lg hover:bg-amber-600 transition-colors"
+                    className="bg-gradient-to-b from-[#d7c6f5] to-[#c2a4f0] p-3 rounded-full text-black shadow-lg transition-colors"
                 >
                     {isPlaying ? <Pause size={32} /> : <Play size={32} />}
                 </button>
-                <button onClick={handleNextTrack} className="text-gray-300 hover:text-white transition-colors">
+                <button onClick={handleNextTrack} className="text-black hover:text-black transition-colors">
                     <SkipForward size={28} />
                 </button>
             </div>
 
-            <div className="flex items-center justify-between text-gray-300">
+            <div className="flex items-center justify-between text-black">
                 <div className="flex items-center space-x-2">
-                    <button onClick={handleToggleMute} className="hover:text-white transition-colors">
+                    <button onClick={handleToggleMute} className="hover:text-black transition-colors">
                         {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
                     </button>
-                    <button onClick={() => handleVolumeChange('decrease')} className="hover:text-white transition-colors">
+                    <button onClick={() => handleVolumeChange('decrease')} className="hover:text-black transition-colors">
                         <Minus size={20} />
                     </button>
                     <span className="w-8 text-center text-sm">{Math.round(volume * 100)}%</span>
-                    <button onClick={() => handleVolumeChange('increase')} className="hover:text-white transition-colors">
+                    <button onClick={() => handleVolumeChange('increase')} className="hover:text-black transition-colors">
                         <Plus size={20} />
                     </button>
                 </div>
-                <button onClick={() => setShowPlaylist(prev => !prev)} className="hover:text-white transition-colors flex items-center gap-1">
+                <button onClick={() => setShowPlaylist(prev => !prev)} className="hover:text-black transition-colors flex items-center gap-1">
                     <List size={20} /> Playlist
                 </button>
             </div>
@@ -304,7 +304,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
                         {reorderedTracks.map((track, index) => (
                             <li
                                 key={track._id}
-                                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${index === currentTrackIndex ? 'bg-amber-600 text-white' : 'hover:bg-gray-700'}`}
+                                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${index === currentTrackIndex ? 'bg-gradient-to-b from-[#cbb1fd] to-[#bb99f3] text-black' : 'hover:bg-gray-200'}`}
                                 onClick={() => { setCurrentTrackIndex(index); setIsPlaying(true); }}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, index)}

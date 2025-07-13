@@ -69,7 +69,8 @@ const Register: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--bg)]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[url('/images/aionbg.png')]
+        bg-no-repeat bg-cover bg-center">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-light text-amber-200 mb-2">

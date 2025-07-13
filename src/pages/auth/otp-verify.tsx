@@ -53,7 +53,11 @@ const OtpVerify = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center text-white p-4 bg-[var(--bg)]'>
+    <div className="min-h-screen flex items-center justify-center text-white p-4 
+    bg-[url('/images/aionbg.png')]
+        bg-no-repeat bg-cover bg-center
+    bg-[var(--bg)]
+    ">
       <div className="text-center flex justify-center items-center flex-col">
         <h1 className='text-3xl font-bold text-center'>OTP Verification</h1>
         <p className='text-center text-sm'>Emailinizə göndərilən OTP kodunu daxil edin</p>

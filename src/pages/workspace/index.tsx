@@ -20,7 +20,6 @@ import HistorySidebar from '@/components/HistorySidebar';
 import AudioPlayer from '@/components/AudioPlayer';
 import { getTracks } from '@/redux/features/trackSlice';
 
-// --- getServerSideProps funksiyası ---
 export const getServerSideProps: GetServerSideProps = async (context) => {
     const isAuthenticated = context.req.cookies.token;
 
@@ -42,9 +41,7 @@ const Index = () => {
     const dispatch: AppDispatch = useDispatch();
     const router = useRouter();
     const { currentTimer, timerSessions, loading, error } = useSelector((state: RootState) => state.timer);
-
-    // Track state-i trackSlice-dən gəlir
-    const { tracks: audioTracksFromRedux, loading: tracksLoading, error: tracksError } = useSelector((state: RootState) => state.tracks); // <-- trackSlice-dən mahnıları çəkin
+    const { tracks: audioTracksFromRedux, loading: tracksLoading, error: tracksError } = useSelector((state: RootState) => state.tracks);
 
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -59,14 +56,6 @@ const Index = () => {
     const tenSecondWarningSound = useRef<HTMLAudioElement | null>(null);
     const endSound = useRef<HTMLAudioElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // DİQQƏT: Bu statik audioTracks array-i artıq istifadə olunmayacaq.
-    // AudioPlayer komponentinə Redux-dan gələn `audioTracksFromRedux` ötürüləcək.
-    // const audioTracks = [
-    //     { id: '1', name: 'Chill Lofi Beats', url: '/audio/chill-lofi-beats.mp3' },
-    //     { id: '2', name: 'Potsu', url: '/audio/potsu.mp3' },
-    //     { id: '3', name: 'Moonlight Sonata ', url: '/audio/moonlight.mp3' },
-    // ];
 
     const isRunningRef = useRef(isRunning);
     useEffect(() => {
@@ -88,7 +77,6 @@ const Index = () => {
         initialTimeRef.current = initialTime;
     }, [initialTime]);
 
-
     useEffect(() => {
         if (typeof window !== 'undefined') {
             tenSecondWarningSound.current = new Audio('/sounds/ten_second_warning.mp3');
@@ -97,17 +85,18 @@ const Index = () => {
             if (storedBackground) {
                 setBackgroundImage(storedBackground);
             }
+            else {
+                setBackgroundImage('/images/aionbg.png');
+            }
         }
     }, []);
 
-    // Timer sessions-ları çəkmək
     useEffect(() => {
         dispatch(getUserTimerSessions());
     }, [dispatch]);
 
-    // Mahnıları çəkmək üçün yeni useEffect
     useEffect(() => {
-        dispatch(getTracks()); // <-- Mahnıları backend-dən çəkin
+        dispatch(getTracks());
     }, [dispatch]);
 
     useEffect(() => {
@@ -412,7 +401,6 @@ const Index = () => {
 
     return (
         <div className="">
-            {/* Session Name Modal */}
             <SessionNameModal
                 isOpen={isNameModalOpen}
                 onClose={() => setIsNameModalOpen(false)}
@@ -420,7 +408,6 @@ const Index = () => {
                 currentName={confirmedSessionName}
             />
 
-            {/* History Sidebar Component */}
             <HistorySidebar
                 isOpen={isSidebarOpen}
                 toggleSidebar={toggleSidebar}
@@ -432,7 +419,6 @@ const Index = () => {
                 handleEditSessionName={handleEditSessionName}
             />
 
-            {/* Main Timer Section */}
             <div
                 ref={fullScreenRef}
                 style={{
@@ -441,10 +427,11 @@ const Index = () => {
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     minHeight: "100vh",
+                    backgroundColor: backgroundImage ? 'rgba(255, 255, 255, 0.9)' : '#ffffff',
+                    backgroundBlendMode: '',
                 }}
-                className='bg-[#161616] text-white flex flex-col items-center justify-center px-4 w-full h-full'
+                className='text-black flex flex-col items-center justify-center px-4 w-full h-full'
             >
-                {/* Hidden file input */}
                 <input
                     type="file"
                     accept="image/*"
@@ -453,49 +440,42 @@ const Index = () => {
                     style={{ display: 'none' }}
                 />
 
-                <div
-                    className="
-                        w-full max-w-2xl mx-auto
-                        flex flex-col items-center justify-center
-                        px-4
-                    "
-                >
-                    <div className="text-3xl md:text-5xl text-center text-amber-200 mt-6 md:mt-12">
-                        Pomodoro Taymer: Dəqiqələri Seçin
+                <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center px-4">
+                    <div className="text-3xl md:text-5xl text-center text-black mt-6 md:mt-12 font-bold">
+                       Dəqiqələri Seçin
                     </div>
 
                     {confirmedSessionName && (
-                        <p className="text-green-400 text-lg font-semibold mt-4">Cari Sessiya Adı: <span className="font-bold">"{confirmedSessionName}"</span></p>
+                        <p className="text-violet-400 text-lg font-semibold mt-4">Cari Sessiya Adı: <span className="font-bold">"{confirmedSessionName}"</span></p>
                     )}
-                    {/* You can still offer the "add name" option visually without forcing it */}
                     {!confirmedSessionName && (
-                        <div className="flex gap-3 justify-center ">
+                        <div className="flex gap-3 justify-center items-center mt-4 text-black">
                             <span>Sessiyana ad ver</span>
                             <button
                                 onClick={() => setIsNameModalOpen(true)}
-                                className="text-amber-200 hover:text-amber-300 transition-colors duration-200 mt-2"
+                                className="text-black hover:text-gray-700 transition-colors duration-200 mt-2"
                                 title="Sessiyaya ad ver"
                             >
-                                <Edit size={28} />
+                                <Edit size={24} color="black" />
                             </button>
                         </div>
                     )}
 
                     <div className="tabs flex flex-col md:flex-row justify-center mt-6 gap-4 w-full items-center">
                         <a
-                            className={`tab border px-5 py-3 rounded-xl text-md border-amber-200 w-40 text-center cursor-pointer ${initialTime === 0.5 * 60 ? 'bg-amber-200 text-[#161616]' : ''}`}
+                            className={`tab border px-5 py-3 rounded-xl text-md border-black w-40 text-center cursor-pointer ${initialTime === 0.5 * 60 ? 'bg-black text-white' : ''}`}
                             onClick={() => setTimerDuration(0.5)}
                         >
                             1 dəqiqə
                         </a>
                         <a
-                            className={`tab border px-5 py-3 rounded-xl text-md border-amber-200 w-40 text-center cursor-pointer ${initialTime === 10 * 60 ? 'bg-amber-200 text-[#161616]' : ''}`}
+                            className={`tab border px-5 py-3 rounded-xl text-md border-black w-40 text-center cursor-pointer ${initialTime === 10 * 60 ? 'bg-black text-white' : ''}`}
                             onClick={() => setTimerDuration(10)}
                         >
                             10 dəqiqə
                         </a>
                         <a
-                            className={`tab border px-5 py-3 rounded-xl text-md border-amber-200 w-40 text-center cursor-pointer ${initialTime === 25 * 60 ? 'bg-amber-200 text-[#161616]' : ''}`}
+                            className={`tab border px-5 py-3 rounded-xl text-md border-black w-40 text-center cursor-pointer ${initialTime === 25 * 60 ? 'bg-black text-white' : ''}`}
                             onClick={() => setTimerDuration(25)}
                         >
                             25 dəqiqə
@@ -505,20 +485,20 @@ const Index = () => {
                     <div className="times w-full mt-10">
                         <div className="flex flex-col sm:flex-row justify-center items-center text-center gap-6">
                             <div className="flex flex-col items-center">
-                                <span className="text-6xl md:text-9xl text-amber-200">{formatTime(timeLeft).split(':')[0]}</span>
-                                <span className="text-gray-400 text-sm">Dəqiqə</span>
+                                <span className="text-6xl md:text-9xl text-black font-bold">{formatTime(timeLeft).split(':')[0]}</span>
+                                <span className="text-gray-600 text-sm">Dəqiqə</span>
                             </div>
-                            <div className="text-6xl md:text-9xl text-gray-400">:</div>
+                            <div className="text-6xl md:text-9xl text-gray-600">:</div>
                             <div className="flex flex-col items-center">
-                                <span className="text-6xl md:text-9xl text-amber-200">{formatTime(timeLeft).split(':')[1]}</span>
-                                <span className="text-gray-400 text-sm">Saniyə</span>
+                                <span className="text-6xl md:text-9xl text-black font-bold">{formatTime(timeLeft).split(':')[1]}</span>
+                                <span className="text-gray-600 text-sm">Saniyə</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="flex justify-center mt-10 w-full">
                         <button
-                            className="border border-amber-200 text-amber-200 px-6 py-3 rounded-xl text-lg font-semibold hover:text-white hover:bg-amber-300 transition duration-300"
+                            className="border border-black text-black px-6 py-3 rounded-xl text-lg font-semibold hover:text-white hover:bg-black transition duration-300"
                             onClick={handleStartPause}
                             disabled={loading === 'pending' || (timeLeft === 0 && initialTime === 0 && !currentTimer)}
                         >
@@ -526,62 +506,57 @@ const Index = () => {
                         </button>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex justify-center items-center mt-4 flex-wrap gap-4">
-                        {/* New: Upload Background Image Button */}
                         <div className="flex flex-col items-center group">
-                            <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Şəkil Yüklə</div>
-                            <ImageIcon className='cursor-pointer' onClick={triggerFileInput} size={28} />
+                            <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Şəkil Yüklə</div>
+                            <ImageIcon className='cursor-pointer' onClick={triggerFileInput} size={28} color="black" />
                         </div>
 
                         <div className="flex flex-col items-center group">
-                            <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Tarixçə</div>
-                            <History className='cursor-pointer' onClick={toggleSidebar} size={28} />
+                            <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Tarixçə</div>
+                            <History className='cursor-pointer' onClick={toggleSidebar} size={28} color="black" />
                         </div>
 
                         {!isCurrentlyFullScreen ? (
                             <div className="flex flex-col items-center group">
-                                <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Tam Ekran</div>
-                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} />
+                                <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Tam Ekran</div>
+                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color="black" />
                             </div>
                         ) : (
                             <div className="flex flex-col items-center group">
-                                <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Tam Ekrandan Çıx</div>
-                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} />
+                                <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Tam Ekrandan Çıx</div>
+                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color="black" />
                             </div>
                         )}
 
                         <div className="flex flex-col items-center group">
-                            <div className="border border-white opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap">Sıfırla</div>
-                            <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} />
+                            <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Sıfırla</div>
+                            <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color="black" />
                         </div>
                     </div>
 
-                    {loading === 'pending' && <p className="text-amber-200 mt-4">Əməliyyat icra olunur...</p>}
-                    {error && <p className="text-red-500 mt-4">Xəta: {error}</p>}
-                    {/* Mahnı yüklənmə statusu və xətası */}
-                    {tracksLoading === 'pending' && <p className="text-gray-400 mt-2">Musiqi yüklənir...</p>}
-                    {tracksError && <p className="text-red-500 mt-2">Musiqi xətası: {tracksError}</p>}
+                    {loading === 'pending' && <p className="text-black mt-4">Əməliyyat icra olunur...</p>}
+                    {error && <p className="text-red-600 mt-4">Xəta: {error}</p>}
+                    {tracksLoading === 'pending' && <p className="text-gray-600 mt-2">Musiqi yüklənir...</p>}
+                    {tracksError && <p className="text-red-600 mt-2">Musiqi xətası: {tracksError}</p>}
 
-                    {/* Current Timer Session Info */}
                     {currentTimer && (
-                        <div className="mt-8 text-center bg-[#2a2a2a] p-4 rounded-xl shadow-lg">
-                            <h3 className="text-green-400 text-xl font-semibold mb-2">Cari Taymer Sessiyası</h3>
-                            <p className="text-white">Ad: {currentTimer.name || 'Ad yoxdur'}</p>
-                            <p className="text-gray-300">ID: {currentTimer._id}</p>
-                            <p className="text-gray-300">Seçilən Müddət: {currentTimer.selectedDuration} dəqiqə</p>
-                            <p className="text-gray-300">Başlama Vaxtı: {new Date(currentTimer.startTime).toLocaleString('az-AZ')}</p>
-                            <p className="text-amber-300 font-bold">Status: {currentTimer.status}</p>
-                            <p className="text-gray-300">İşləyən Vaxt: {formatTime(currentTimer.elapsedTime)}</p>
-                            {currentTimer.totalPausedTime > 0 && <p className="text-gray-300">Ümumi Fasilə Vaxtı: {formatTime(currentTimer.totalPausedTime)}</p>}
-                            {currentTimer.endTime && <p className="text-gray-300">Bitmə Vaxtı: {new Date(currentTimer.endTime).toLocaleString('az-AZ')}</p>}
+                        <div className="mt-8 text-center bg-white p-4 rounded-xl shadow-lg border border-gray-300">
+                            <h3 className="text-green-600 text-xl font-semibold mb-2">Cari Taymer Sessiyası</h3>
+                            <p className="text-black">Ad: {currentTimer.name || 'Ad yoxdur'}</p>
+                            <p className="text-gray-600">ID: {currentTimer._id}</p>
+                            <p className="text-gray-600">Seçilən Müddət: {currentTimer.selectedDuration} dəqiqə</p>
+                            <p className="text-gray-600">Başlama Vaxtı: {new Date(currentTimer.startTime).toLocaleString('az-AZ')}</p>
+                            <p className="text-black font-bold">Status: {currentTimer.status}</p>
+                            <p className="text-gray-600">İşləyən Vaxt: {formatTime(currentTimer.elapsedTime)}</p>
+                            {currentTimer.totalPausedTime > 0 && <p className="text-gray-600">Ümumi Fasilə Vaxtı: {formatTime(currentTimer.totalPausedTime)}</p>}
+                            {currentTimer.endTime && <p className="text-gray-600">Bitmə Vaxtı: {new Date(currentTimer.endTime).toLocaleString('az-AZ')}</p>}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Audio Player Component - İndi Redux-dan gələn mahnıları istifadə edir */}
-            <AudioPlayer tracks={audioTracksFromRedux} /> {/* <-- Buranı dəyişdik */}
+            <AudioPlayer tracks={audioTracksFromRedux} />
         </div>
     );
 };

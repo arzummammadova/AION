@@ -10,7 +10,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="bg-[url('/images/aionbg.png')] bg-cover bg-center2">
         <Providers>
           <Navbar />
           <main>{children}</main>

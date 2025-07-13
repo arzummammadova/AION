@@ -6,7 +6,7 @@ import { forgotPasswordUserSchema } from '@/schema/auth';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ZodError } from 'zod'; 
+import { ZodError } from 'zod';
 
 
 const ForgotPassword = () => {
@@ -17,7 +17,7 @@ const ForgotPassword = () => {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormErrors({}); 
+    setFormErrors({});
 
     try {
       const validatedData = forgotPasswordUserSchema.parse({ email });
@@ -47,13 +47,19 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center p-4 bg-[var(--bg)]'>
+    <div className="min-h-screen flex items-center justify-center p-4
+
+    
+     bg-[url('/images/aionbg.png')]
+        bg-no-repeat bg-cover bg-center
+     
+    " >
       <div className='w-full max-w-md'>
         <div className='text-center mb-8'>
           <h2 className='text-3xl font-light text-amber-200 mb-2'>
             Forgot Password for <span className='font-bold text-white'>AION</span>
           </h2>
-          <p className='text-gray-500'>Emailinizi daxil edin şifrənizi sıfırlamaq üçün</p> 
+          <p className='text-gray-500'>Emailinizi daxil edin şifrənizi sıfırlamaq üçün</p>
         </div>
 
         <div className='bg-white rounded-lg shadow-sm p-8'>
@@ -65,12 +71,12 @@ const ForgotPassword = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Emailinizi daxil edin" 
+                placeholder="Emailinizi daxil edin"
                 className='w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-yellow-500'
                 required
               />
               {formErrors.email && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.email}</p> 
+                <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
               )}
             </div>
 
@@ -86,7 +92,7 @@ const ForgotPassword = () => {
           {error && !formErrors.email && <p className="text-red-500 text-center mt-4">{error}</p>}
 
           <div className='mt-6 text-center text-sm text-gray-500'>
-            Şifrənizi xatırladınız?{' '} 
+            Şifrənizi xatırladınız?{' '}
             <Link href="/auth/login" className='font-medium text-yellow-600 hover:underline'>Giriş Səhifəsinə Qayıt</Link>
           </div>
         </div>
