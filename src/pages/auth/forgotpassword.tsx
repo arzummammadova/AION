@@ -1,10 +1,10 @@
-
 "use client";
+import { setTheme, toggleTheme } from '@/redux/features/themeSlice'; // toggleTheme-ə ehtiyac yoxdur bu səhifədə, amma ziyanı yoxdur
 import { forgotPasswordUser } from '@/redux/features/userSlice';
 import { AppDispatch, RootState } from '@/redux/store/store';
 import { forgotPasswordUserSchema } from '@/schema/auth';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ZodError } from 'zod';
 
@@ -12,8 +12,26 @@ import { ZodError } from 'zod';
 const ForgotPassword = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [email, setEmail] = useState('');
-  const [formErrors, setFormErrors] = useState<{ email?: string }>({}); // Forma xətaları üçün state
+  const [formErrors, setFormErrors] = useState<{ email?: string }>({});
   const { loading, error } = useSelector((state: RootState) => state.user);
+  const { isDarkMode } = useSelector((state: RootState) => state.theme); // isDarkMode-u Redux-dan alırıq
+
+  // Dark mode-u local storage-dan yükləyib Redux state-i set etmək
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    if (storedTheme === "dark" || (!storedTheme && prefersDark)) {
+      dispatch(setTheme(true)); // Redux state-i dark olaraq set et
+    } else {
+      dispatch(setTheme(false)); // Redux state-i light olaraq set et
+    }
+  }, [dispatch]);
+
+  // handleToggleDarkMode funksiyası bu komponentdə lazım deyil, çünki burada tema keçid düyməsi yoxdur.
+  // Bu səbəbdən onu silə bilərik.
+  // const handleToggleDarkMode = () => {
+  //   dispatch(toggleTheme());
+  // };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +43,6 @@ const ForgotPassword = () => {
 
       if (forgotPasswordUser.fulfilled.match(resultAction)) {
         alert("Emailinizə OTP kodu göndərildi ✅");
-
         setEmail('');
       } else if (forgotPasswordUser.rejected.match(resultAction)) {
         alert(resultAction.payload || 'Şifrə sıfırlama sorğusu uğursuz oldu.');
@@ -46,54 +63,62 @@ const ForgotPassword = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4
+  // Dinamik sinifləri təyin edirik
+  const containerBgClass = isDarkMode ? "bg-[url('/images/aionbg.png')] bg-no-repeat bg-cover bg-center bg-black" : "bg-[url('/images/aionbg.png')] bg-no-repeat bg-cover bg-center";
+  const titleColorClass = isDarkMode ? "text-white" : "text-black";
+  const subtitleColorClass = isDarkMode ? "text-white" : "text-gray-500";
+  const formBgClass = isDarkMode ? "bg-gray-800" : "bg-white";
+  const formShadowClass = isDarkMode ? "shadow-lg" : "shadow-sm"; // Shadow-lg dark mode-da daha yaxşı görünə bilər
+  const labelColorClass = isDarkMode ? "text-gray-300" : "text-gray-700";
+  const inputBgClass = isDarkMode ? "bg-gray-700 text-white placeholder-gray-400" : "bg-white text-black placeholder-gray-500";
+  const inputBorderFocusClass = isDarkMode ? "border-gray-600 focus:ring-amber-500" : "border-gray-200 focus:ring-yellow-500";
+  const buttonBgClass = isDarkMode ? "bg-violet-400 hover:bg-amber-700" : "bg-black hover:bg-violet-600";
+  const linkColorClass = isDarkMode ? "text-amber-400 hover:underline" : "text-yellow-600 hover:underline";
+  const errorTextColorClass = isDarkMode ? "text-red-400" : "text-red-500";
 
-    
-     bg-[url('/images/aionbg.png')]
-        bg-no-repeat bg-cover bg-center
-     
-    " >
+
+  return (
+    <div className={`min-h-screen flex items-center justify-center p-4 ${containerBgClass}`}>
       <div className='w-full max-w-md'>
         <div className='text-center mb-8'>
-          <h2 className='text-3xl font-light text-amber-200 mb-2'>
-            Forgot Password for <span className='font-bold text-white'>AION</span>
+          <h2 className={`text-3xl font-light text-amber-200 mb-2`}>
+            Forgot Password for <span className={`font-bold ${titleColorClass}`}>AION</span>
           </h2>
-          <p className='text-gray-500'>Emailinizi daxil edin şifrənizi sıfırlamaq üçün</p>
+          <p className={`${subtitleColorClass}`}>Emailinizi daxil edin şifrənizi sıfırlamaq üçün</p>
         </div>
 
-        <div className='bg-white rounded-lg shadow-sm p-8'>
+        <div className={`${formBgClass} rounded-lg ${formShadowClass} p-8`}>
           <form className='space-y-5' onSubmit={onSubmit}>
             <div>
-              <label htmlFor="email" className='block text-sm font-medium text-gray-700 mb-1'>Email</label>
+              <label htmlFor="email" className={`block text-sm font-medium mb-1 ${labelColorClass}`}>Email</label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Emailinizi daxil edin"
-                className='w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-yellow-500'
+                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-1 ${inputBgClass} ${inputBorderFocusClass} ${formErrors.email ? 'border-red-500' : ''}`}
                 required
               />
               {formErrors.email && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                <p className={`${errorTextColorClass} text-sm mt-1`}>{formErrors.email}</p>
               )}
             </div>
 
             <button
               type='submit'
-              className='w-full bg-black hover:bg-yellow-600 text-white py-2.5 rounded-md font-medium transition-colors'
+              className={`w-full ${buttonBgClass} text-white py-2.5 rounded-md font-medium transition-colors`}
               disabled={loading === 'loading'}
             >
               {loading === 'loading' ? 'Göndərilir...' : 'Şifrəni Sıfırla'}
             </button>
           </form>
 
-          {error && !formErrors.email && <p className="text-red-500 text-center mt-4">{error}</p>}
+          {error && !formErrors.email && <p className={`${errorTextColorClass} text-center mt-4`}>{error}</p>}
 
-          <div className='mt-6 text-center text-sm text-gray-500'>
+          <div className={`mt-6 text-center text-sm ${subtitleColorClass}`}>
             Şifrənizi xatırladınız?{' '}
-            <Link href="/auth/login" className='font-medium text-yellow-600 hover:underline'>Giriş Səhifəsinə Qayıt</Link>
+            <Link href="/auth/login" className={`font-medium ${linkColorClass}`}>Giriş Səhifəsinə Qayıt</Link>
           </div>
         </div>
       </div>

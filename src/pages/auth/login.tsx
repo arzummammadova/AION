@@ -11,7 +11,7 @@ import { LoginInput, loginSchema } from '@/schema/auth';
 export default function Login() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
-    const [isDarkMode, setIsDarkMode] = useState(false); // Add dark mode state
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     const {
         register,
@@ -21,7 +21,6 @@ export default function Login() {
         resolver: zodResolver(loginSchema),
     });
 
-    // Load user theme from localStorage on component mount
     useEffect(() => {
         const storedTheme = localStorage.getItem("theme");
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -34,7 +33,6 @@ export default function Login() {
             document.documentElement.classList.remove("dark");
         }
 
-        // Check for alert query parameter
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('alert') === 'not-logged-in') {
             alert("Zəhmət olmasa daxil olun (login olun)!");
@@ -63,16 +61,16 @@ export default function Login() {
         }
     };
 
-    // Define dynamic classes based on dark mode state
-    const bgColorClass = isDarkMode ? "bg-black" : "bg-[url('/images/aionbg.png')] bg-no-repeat bg-cover bg-center";
+    const bgColorClass = isDarkMode ? "bg-black bg-[url('/images/aionbg.png')] bg-no-repeat bg-cover bg-center" : "bg-[url('/images/aionbg.png')] bg-no-repeat bg-cover bg-center";
     const textColorClass = isDarkMode ? "text-white" : "text-black";
     const titleTextColorClass = isDarkMode ? "text-white" : "text-black";
     const formBgClass = isDarkMode ? "bg-gray-800" : "bg-white";
     const formShadowClass = isDarkMode ? "shadow-lg" : "shadow-sm";
     const labelTextColorClass = isDarkMode ? "text-gray-300" : "text-gray-700";
-    const inputBorderClass = isDarkMode ? "border-gray-600 focus:ring-yellow-600" : "border-gray-200 focus:ring-yellow-500";
-    const buttonBgClass = isDarkMode ? "bg-amber-600 hover:bg-amber-700" : "bg-black hover:bg-yellow-600";
-    const linkTextColorClass = isDarkMode ? "text-amber-400 hover:text-amber-500" : "text-black hover:text-yellow-600";
+    const inputBorderClass = isDarkMode ? "border-gray-600 focus:ring-amber-600" : "border-gray-200 focus:ring-black"; // Changed focus ring for dark mode
+    // Adjusted buttonBgClass for better consistency with Home page buttons while maintaining distinctness for login
+    const buttonBgClass = isDarkMode ? "bg-white hover:bg-gray-200 text-black" : "bg-black hover:bg-gray-800 text-white"; 
+    const linkTextColorClass = isDarkMode ? "text-amber-400 hover:text-amber-500" : "text-black hover:text-gray-700"; // Changed link hover for light mode
     const placeholderColorClass = isDarkMode ? "placeholder-gray-400" : "placeholder-gray-500";
 
 
@@ -89,7 +87,6 @@ export default function Login() {
 
                 <div className={`${formBgClass} rounded-lg ${formShadowClass} p-8`}>
                     <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-                        {/* Email */}
                         <div>
                             <label
                                 htmlFor="email"
@@ -113,7 +110,6 @@ export default function Login() {
                             )}
                         </div>
 
-                        {/* Password */}
                         <div className="relative">
                             <label
                                 htmlFor="password"
@@ -133,7 +129,7 @@ export default function Login() {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((prev) => !prev)}
-                                className={`absolute right-3 top-9 text-gray-400 ${isDarkMode ? 'hover:text-amber-400' : 'hover:text-yellow-600'}`}
+                                className={`absolute right-3 top-9 text-gray-400 ${isDarkMode ? 'hover:text-amber-400' : 'hover:text-black'}`}
                                 tabIndex={-1}
                             >
                                 {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
@@ -145,18 +141,20 @@ export default function Login() {
                             )}
                         </div>
 
-                        {/* Submit */}
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`w-full ${buttonBgClass} text-white py-2.5 rounded-md font-medium transition-colors disabled:opacity-50`}
+                            className={`w-full bg-violet-400 py-2.5 rounded-md font-medium transition-colors disabled:opacity-50`}
                         >
                             {isSubmitting ? 'Loading…' : 'Log In'}
                         </button>
                     </form>
 
+                    <div className="text-white text-sm mt-2">Didn't have an account? 
+                        <Link className='text-violet-300' href="/auth/register">Register now</Link>
+                    </div>
                     <Link
-                        className={`text-sm flex justify-end mt-3 ${linkTextColorClass}`}
+                        className={`text-sm flex justify-end mt-3 text-violet-200`}
                         href="/auth/forgotpassword"
                     >
                         Forgot password?

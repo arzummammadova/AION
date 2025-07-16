@@ -8,35 +8,35 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store/store";
 import { fetchUser, logoutUser } from "@/redux/features/userSlice";
 import { useEffect, useState, useRef } from "react";
+import { setTheme } from "@/redux/features/themeSlice";
 
 export default function Navbar() {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.user);
+  const { isDarkMode } = useSelector((state: RootState) => state.theme);
   const [greeting, setGreeting] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load user theme from localStorage
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
     if (storedTheme === "dark" || (!storedTheme && prefersDark)) {
-      setIsDarkMode(true);
+      dispatch(setTheme(true));
       document.documentElement.classList.add("dark");
     } else {
-      setIsDarkMode(false);
+      dispatch(setTheme(false));
       document.documentElement.classList.remove("dark");
     }
-  }, []);
+  }, [dispatch]);
 
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
+    dispatch(setTheme(newMode));
     if (newMode) {
       document.documentElement.classList.add("dark");
       localStorage.setItem("theme", "dark");
@@ -90,28 +90,23 @@ export default function Navbar() {
 
   return (
     <nav className={`${isDarkMode ? "dark" : ""}`}>
-      <div className={`w-full fixed p-5 z-50 shadow border-b ${isDarkMode ? "bg-gradient-to-r from-gray-900 via-gray-800 to-black" : "bg-transparent border-b-indigo-200"} ${textColorClass}`}>
+      <div className={`w-full fixed p-5 z-50 shadow border-b ${isDarkMode ? " opacity-70 bg-black via-gray-300 to-black" : "bg-transparent border-b-indigo-100"} ${textColorClass}`}>
         <div className="container mx-auto flex justify-between items-center">
-          {/* Logo */}
           <Link href="/" className="text-2xl font-bold">
             AION
           </Link>
 
-          {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link href="/" className={hoverTextColorClass}>Home</Link>
+            <Link href="/" className={hoverTextColorClass}>Ana Səhifə</Link>
             <Link href="/about" className={hoverTextColorClass}>About</Link>
             <Link href="/contact" className={hoverTextColorClass}>Contact</Link>
           </div>
 
-          {/* Mobile Menu Toggle */}
           <button className="md:hidden" onClick={() => setShowMobileMenu(!showMobileMenu)}>
             {showMobileMenu ? <FiX size={26} /> : <FiMenu size={26} />}
           </button>
 
-          {/* Right */}
           <div className="flex items-center space-x-4 relative">
-            {/* Language Switcher */}
             <div className="relative" ref={langDropdownRef}>
               <button
                 onClick={() => setShowLangDropdown(!showLangDropdown)}
@@ -133,7 +128,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Dark Mode */}
             <button
               onClick={toggleDarkMode}
               className={`p-2 rounded-full transition ${hoverBgColorClass} ${textColorClass}`}
@@ -142,7 +136,6 @@ export default function Navbar() {
               {isDarkMode ? <MdLightMode size={24} /> : <MdDarkMode size={24} />}
             </button>
 
-            {/* User Dropdown */}
             {user ? (
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -182,10 +175,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {showMobileMenu && (
           <div className={`md:hidden mt-4 space-y-3 px-4 ${textColorClass}`}>
-            <Link href="/" className={`block ${hoverTextColorClass}`}>Home</Link>
+            <Link href="/" className={`block ${hoverTextColorClass}`}>Ana Səhifə</Link>
             <Link href="/about" className={`block ${hoverTextColorClass}`}>About</Link>
             <Link href="/contact" className={`block ${hoverTextColorClass}`}>Contact</Link>
             {!user && (

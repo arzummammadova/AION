@@ -12,9 +12,10 @@ interface AudioTrack {
 interface AudioPlayerProps {
     tracks: AudioTrack[];
     onTracksReorder: (reorderedTracks: AudioTrack[]) => void;
+    isDarkMode: boolean;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder, isDarkMode }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -177,13 +178,40 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
         }
     };
 
+    // Dynamic classes based on dark mode state
+    const playerBaseClass = `fixed bottom-6 right-6 p-6 rounded-3xl shadow-2xl backdrop-blur-lg border max-w-sm transition-colors duration-300`;
+    const playerMinimizedClass = `fixed bottom-6 right-6 p-4 rounded-2xl shadow-2xl backdrop-blur-lg border cursor-pointer transition-all duration-300 hover:scale-105`;
+
+    const playerBgClass = isDarkMode
+        ? "bg-gradient-to-br from-[#27548A] to-[#1A3D5E] border-[#27548A]/50 text-white" // Tünd rejim üçün gece mavisi gradient və sərhəd
+        : "bg-gradient-to-b from-[#eeecf2] to-[#E7D8FF] border-gray-300/50 text-black"; // Açıq rejim gradienti
+
+    const iconColorClass = isDarkMode ? "text-[#77BEF0]" : "text-violet-600"; // İkonlar üçün açıq mavi və ya bənövşəyi
+    const textPrimaryClass = isDarkMode ? "text-white" : "text-black";
+    const textSecondaryClass = isDarkMode ? "text-[#B0D9FF]" : "text-gray-600"; // İkinci dərəcəli mətnlər üçün daha açıq mavi və ya boz
+
+    const buttonHoverClass = isDarkMode ? "hover:text-white" : "hover:text-gray-700";
+    const primaryButtonBgClass = isDarkMode
+        ? "bg-gradient-to-b from-[#77BEF0] to-[#5AAADF] text-black shadow-lg" // Tünd rejim primary button üçün açıq mavi gradient
+        : "bg-gradient-to-b from-[#d7c6f5] to-[#c2a4f0] text-black shadow-lg";
+
+    const progressBarBgClass = isDarkMode ? "bg-gray-700" : "bg-gray-300";
+    const progressBarFillClass = isDarkMode ? "bg-[#77BEF0]" : "bg-purple-600"; // Progress bar dolğusu üçün açıq mavi
+
+    const playlistActiveBgClass = isDarkMode
+        ? "bg-[#27548A] text-white" // Pleylist aktiv elementi üçün əsas koyu mavi
+        : "bg-gradient-to-b from-[#cbb1fd] to-[#bb99f3] text-black";
+
+    const playlistHoverBgClass = isDarkMode ? "hover:bg-[#1A3D5E]" : "hover:bg-gray-200"; // Pleylist elementi hover rəngi
+    const playlistBorderClass = isDarkMode ? "border-gray-600" : "border-gray-300"; // Pleylist sərhədi
+
 
     if (reorderedTracks.length === 0) {
         return (
-            <div className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-black max-w-sm">
+            <div className={`${playerBaseClass} ${playerBgClass}`}>
                 <div className="flex items-center justify-center space-x-3">
-                    <Music className="text-black" size={24} />
-                    <span className="text-black">Musiqi yoxdur. Zəhmət olmasa siyahıya mahnı əlavə edin.</span>
+                    <Music className={iconColorClass} size={24} />
+                    <span className={textPrimaryClass}>Musiqi yoxdur. Zəhmət olmasa siyahıya mahnı əlavə edin.</span>
                 </div>
             </div>
         );
@@ -194,18 +222,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
     if (isMinimized) {
         return (
             <div
-                className="fixed bottom-6 right-6 bg-gradient-to-br from-black to-gray-800 p-4 rounded-2xl shadow-2xl backdrop-blur-lg border border-gray-700/50 cursor-pointer transition-all duration-300 hover:scale-105"
+                className={`${playerMinimizedClass} ${playerBgClass}`}
                 onClick={() => setIsMinimized(false)}
             >
                 <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-[#77BEF0]' : 'bg-violet-500'}`}> {/* Minimized icon bg */}
                         <Music className="text-black" size={20} />
                     </div>
                     <div className="flex-1">
-                        <p className="text-black font-medium text-sm truncate max-w-32">
+                        <p className={`${textPrimaryClass} font-medium text-sm truncate max-w-32`}>
                             {currentTrack.name}
                         </p>
-                        <p className="text-black text-xs truncate max-w-32">
+                        <p className={`${textSecondaryClass} text-xs truncate max-w-32`}>
                             {currentTrack.artist}
                         </p>
                     </div>
@@ -215,17 +243,17 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
     }
 
     return (
-        <div className="fixed bottom-6 right-6 bg-gradient-to-b from-[#eeecf2] to-[#E7D8FF] p-6 rounded-3xl shadow-2xl backdrop-blur-lg border border-gray-700/50 text-black max-w-sm">
+        <div className={`${playerBaseClass} ${playerBgClass}`}>
             <button
                 onClick={() => setIsMinimized(true)}
-                className="absolute top-2 right-2 text-black hover:text-black transition-colors duration-200"
+                className={`${textPrimaryClass} ${buttonHoverClass} absolute top-2 right-2 transition-colors duration-200`}
                 title="Kiçilt"
             >
                 <X size={20} />
             </button>
 
-            <h3 className="text-lg font-bold mb-4 flex items-center justify-center gap-2">
-                <Music size={20} className="text-amber-400" /> Musiqi Playeri
+            <h3 className={`text-lg font-bold mb-4 flex items-center justify-center gap-2 ${textPrimaryClass}`}>
+                <Music size={20} className={iconColorClass} /> Musiqi Playeri
             </h3>
 
             <div className="flex items-center space-x-4 mb-4">
@@ -237,8 +265,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
                     />
                 )}
                 <div className="flex-1">
-                    <p className="font-semibold text-lg">{currentTrack.name}</p>
-                    <p className="text-black text-sm">{currentTrack.artist}</p>
+                    <p className={`font-semibold text-lg ${textPrimaryClass}`}>{currentTrack.name}</p>
+                    <p className={`${textSecondaryClass} text-sm`}>{currentTrack.artist}</p>
                 </div>
             </div>
 
@@ -251,60 +279,60 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
             />
 
             <div
-                className="w-full bg-gray-700 rounded-full h-1.5 mb-2 cursor-pointer relative"
+                className={`w-full rounded-full h-1.5 mb-2 cursor-pointer relative ${progressBarBgClass}`}
                 onClick={handleSeek}
             >
                 <div
-                    className="bg-amber-500 h-1.5 rounded-full absolute top-0 left-0"
+                    className={`${progressBarFillClass} h-1.5 rounded-full absolute top-0 left-0`}
                     style={{ width: `${(currentTime / duration) * 100}%` }}
                 ></div>
             </div>
-            <div className="flex justify-between text-xs text-black mb-4">
+            <div className={`flex justify-between text-xs mb-4 ${textSecondaryClass}`}>
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
             </div>
 
             <div className="flex items-center justify-center space-x-4 mb-4">
-                <button onClick={handlePrevTrack} className="text-black hover:text-black transition-colors">
+                <button onClick={handlePrevTrack} className={`${textPrimaryClass} ${buttonHoverClass}`}>
                     <SkipBack size={28} />
                 </button>
                 <button
                     onClick={handlePlayPause}
-                    className="bg-gradient-to-b from-[#d7c6f5] to-[#c2a4f0] p-3 rounded-full text-black shadow-lg transition-colors"
+                    className={`${primaryButtonBgClass} p-3 rounded-full shadow-lg transition-colors`}
                 >
                     {isPlaying ? <Pause size={32} /> : <Play size={32} />}
                 </button>
-                <button onClick={handleNextTrack} className="text-black hover:text-black transition-colors">
+                <button onClick={handleNextTrack} className={`${textPrimaryClass} ${buttonHoverClass}`}>
                     <SkipForward size={28} />
                 </button>
             </div>
 
-            <div className="flex items-center justify-between text-black">
+            <div className={`flex items-center justify-between ${textPrimaryClass}`}>
                 <div className="flex items-center space-x-2">
-                    <button onClick={handleToggleMute} className="hover:text-black transition-colors">
+                    <button onClick={handleToggleMute} className={`${buttonHoverClass}`}>
                         {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
                     </button>
-                    <button onClick={() => handleVolumeChange('decrease')} className="hover:text-black transition-colors">
+                    <button onClick={() => handleVolumeChange('decrease')} className={`${buttonHoverClass}`}>
                         <Minus size={20} />
                     </button>
                     <span className="w-8 text-center text-sm">{Math.round(volume * 100)}%</span>
-                    <button onClick={() => handleVolumeChange('increase')} className="hover:text-black transition-colors">
+                    <button onClick={() => handleVolumeChange('increase')} className={`${buttonHoverClass}`}>
                         <Plus size={20} />
                     </button>
                 </div>
-                <button onClick={() => setShowPlaylist(prev => !prev)} className="hover:text-black transition-colors flex items-center gap-1">
+                <button onClick={() => setShowPlaylist(prev => !prev)} className={`${buttonHoverClass} flex items-center gap-1`}>
                     <List size={20} /> Playlist
                 </button>
             </div>
 
             {showPlaylist && (
-                <div className="mt-4 max-h-48 overflow-y-auto custom-scrollbar border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold mb-2">Playlist</h4>
+                <div className={`mt-4 max-h-48 overflow-y-auto custom-scrollbar border-t pt-4 ${playlistBorderClass}`}>
+                    <h4 className={`font-semibold mb-2 ${textPrimaryClass}`}>Playlist</h4>
                     <ul>
                         {reorderedTracks.map((track, index) => (
                             <li
                                 key={track._id}
-                                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${index === currentTrackIndex ? 'bg-gradient-to-b from-[#cbb1fd] to-[#bb99f3] text-black' : 'hover:bg-gray-200'}`}
+                                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${index === currentTrackIndex ? playlistActiveBgClass : `${playlistHoverBgClass} ${textPrimaryClass}`}`}
                                 onClick={() => { setCurrentTrackIndex(index); setIsPlaying(true); }}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, index)}
@@ -312,8 +340,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ tracks, onTracksReorder }) =>
                                 onDrop={(e) => handleDrop(e, index)}
                             >
                                 <span className="text-sm">{track.name} - {track.artist}</span>
-                                {index === currentTrackIndex && isPlaying && <Play size={16} />}
-                                {index === currentTrackIndex && !isPlaying && <Pause size={16} />}
+                                {index === currentTrackIndex && isPlaying && <Play size={16} className={iconColorClass} />}
+                                {index === currentTrackIndex && !isPlaying && <Pause size={16} className={iconColorClass} />}
                             </li>
                         ))}
                     </ul>

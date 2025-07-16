@@ -1,10 +1,11 @@
 // src/pages/workspace/index.tsx
-import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
+"use client";
+import React, { useState, useEffect, useRef } from 'react';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
-import { Maximize, Minimize2, RotateCcw, Trash2, History, X, Edit, Image as ImageIcon } from 'lucide-react';
+import { Maximize, Minimize2, RotateCcw, History, Edit } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/redux/store';
+import { AppDispatch, RootState } from '@/redux/store/store';
 import {
     startTimerSession,
     pauseTimerSession,
@@ -15,9 +16,11 @@ import {
     clearCurrentTimer,
     updateTimerSession,
 } from '@/redux/features/timerSlice';
+
 import SessionNameModal from '@/components/SessionNameModal';
 import HistorySidebar from '@/components/HistorySidebar';
 import AudioPlayer from '@/components/AudioPlayer';
+import ImageSelector from '@/components/ImageSelector'; // Yeni import
 import { getTracks } from '@/redux/features/trackSlice';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -42,20 +45,20 @@ const Index = () => {
     const router = useRouter();
     const { currentTimer, timerSessions, loading, error } = useSelector((state: RootState) => state.timer);
     const { tracks: audioTracksFromRedux, loading: tracksLoading, error: tracksError } = useSelector((state: RootState) => state.tracks);
+    const { isDarkMode } = useSelector((state: RootState) => state.theme);
 
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [initialTime, setInitialTime] = useState<number>(0);
     const [isCurrentlyFullScreen, setIsCurrentlyFullScreen] = useState<boolean>(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
-    const [isNameModalOpen, setIsNameModalOpen] = useState<boolean>(false);
+    const [isNameModalAdOpen, setIsNameModalAdOpen] = useState<boolean>(false);
     const [confirmedSessionName, setConfirmedSessionName] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
 
     const fullScreenRef = useRef<HTMLDivElement>(null);
     const tenSecondWarningSound = useRef<HTMLAudioElement | null>(null);
     const endSound = useRef<HTMLAudioElement | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isRunningRef = useRef(isRunning);
     useEffect(() => {
@@ -86,10 +89,20 @@ const Index = () => {
                 setBackgroundImage(storedBackground);
             }
             else {
-                setBackgroundImage('/images/aionbg.png');
+                setBackgroundImage('/images/aionbg.png'); // Default fon şəkli
             }
         }
     }, []);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+    }, [isDarkMode]);
 
     useEffect(() => {
         dispatch(getUserTimerSessions());
@@ -382,28 +395,43 @@ const Index = () => {
         return 'Başlat';
     };
 
-    const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const imageUrl = reader.result as string;
-                setBackgroundImage(imageUrl);
-                localStorage.setItem('pomodoroBackground', imageUrl);
-            };
-            reader.readAsDataURL(file);
-        }
+    const handleImageSelect = (imageUrl: string) => {
+        setBackgroundImage(imageUrl);
+        localStorage.setItem('pomodoroBackground', imageUrl);
     };
 
-    const triggerFileInput = () => {
-        fileInputRef.current?.click();
-    };
+    // Dark/Light Mode üçün dinamik siniflər
+    const mainContainerBgStyle = isDarkMode
+        ? {
+            backgroundColor: 'black',
+            backgroundImage: backgroundImage ? `url('${backgroundImage}')` : 'none',
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            minHeight: "100vh",
+        }
+        : {
+            backgroundColor: 'white',
+            backgroundImage: backgroundImage ? `url('${backgroundImage}')` : 'none',
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            minHeight: "100vh",
+        };
+
+
+    const textColorClass = isDarkMode ? "text-white" : "text-black";
+    const tabActiveBgClass = isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black';
+    const tabInactiveBgClass = isDarkMode ? 'border-white text-white' : 'border-black text-black';
+    const iconColor = isDarkMode ? "white" : "black";
+    const infoBoxBg = isDarkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-white border-gray-300 text-black";
+
 
     return (
         <div className="">
             <SessionNameModal
-                isOpen={isNameModalOpen}
-                onClose={() => setIsNameModalOpen(false)}
+                isOpen={isNameModalAdOpen}
+                onClose={() => setIsNameModalAdOpen(false)}
                 onConfirm={handleConfirmNameFromModal}
                 currentName={confirmedSessionName}
             />
@@ -417,65 +445,50 @@ const Index = () => {
                 formatTime={formatTime}
                 handleDeleteTimer={handleDeleteTimer}
                 handleEditSessionName={handleEditSessionName}
+                isDarkMode={isDarkMode}
             />
 
             <div
                 ref={fullScreenRef}
-                style={{
-                    backgroundImage: backgroundImage ? `url('${backgroundImage}')` : 'none',
-                    backgroundRepeat: "no-repeat",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    minHeight: "100vh",
-                    backgroundColor: backgroundImage ? 'rgba(255, 255, 255, 0.9)' : '#ffffff',
-                    backgroundBlendMode: '',
-                }}
-                className='text-black flex flex-col items-center justify-center px-4 w-full h-full'
+                style={mainContainerBgStyle}
+                className={`flex flex-col items-center justify-center px-4 w-full  transition-colors duration-300`}
             >
-                <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    style={{ display: 'none' }}
-                />
-
                 <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center px-4">
-                    <div className="text-3xl md:text-5xl text-center text-black mt-6 md:mt-12 font-bold">
-                       Dəqiqələri Seçin
+                    <div className={`text-2xl md:text-5xl text-center mt-6 md:mt-12 font-bold ${textColorClass}`}>
+                        Choose your minutes
                     </div>
 
                     {confirmedSessionName && (
-                        <p className="text-violet-400 text-lg font-semibold mt-4">Cari Sessiya Adı: <span className="font-bold">"{confirmedSessionName}"</span></p>
+                        <p className={`text-lg font-semibold mt-4 ${textColorClass}`}>Cari Sessiya Adı: <span className="font-bold">"{confirmedSessionName}"</span></p>
                     )}
                     {!confirmedSessionName && (
-                        <div className="flex gap-3 justify-center items-center mt-4 text-black">
-                            <span>Sessiyana ad ver</span>
+                        <div className="flex gap-3 justify-center items-center mt-4">
+                            <span className={textColorClass}>Sessiyana ad ver</span>
                             <button
-                                onClick={() => setIsNameModalOpen(true)}
-                                className="text-black hover:text-gray-700 transition-colors duration-200 mt-2"
+                                onClick={() => setIsNameModalAdOpen(true)}
+                                className={`hover:text-gray-700 transition-colors duration-200 mt-2 ${textColorClass}`}
                                 title="Sessiyaya ad ver"
                             >
-                                <Edit size={24} color="black" />
+                                <Edit size={24} color={iconColor} />
                             </button>
                         </div>
                     )}
 
                     <div className="tabs flex flex-col md:flex-row justify-center mt-6 gap-4 w-full items-center">
                         <a
-                            className={`tab border px-5 py-3 rounded-xl text-md border-black w-40 text-center cursor-pointer ${initialTime === 0.5 * 60 ? 'bg-black text-white' : ''}`}
+                            className={`tab border px-5 py-3 rounded-xl text-md w-40 text-center cursor-pointer ${initialTime === 0.5 * 60 ? tabActiveBgClass : tabInactiveBgClass}`}
                             onClick={() => setTimerDuration(0.5)}
                         >
                             1 dəqiqə
                         </a>
                         <a
-                            className={`tab border px-5 py-3 rounded-xl text-md border-black w-40 text-center cursor-pointer ${initialTime === 10 * 60 ? 'bg-black text-white' : ''}`}
+                            className={`tab border px-5 py-3 rounded-xl text-md w-40 text-center cursor-pointer ${initialTime === 10 * 60 ? tabActiveBgClass : tabInactiveBgClass}`}
                             onClick={() => setTimerDuration(10)}
                         >
                             10 dəqiqə
                         </a>
                         <a
-                            className={`tab border px-5 py-3 rounded-xl text-md border-black w-40 text-center cursor-pointer ${initialTime === 25 * 60 ? 'bg-black text-white' : ''}`}
+                            className={`tab border px-5 py-3 rounded-xl text-md w-40 text-center cursor-pointer ${initialTime === 25 * 60 ? tabActiveBgClass : tabInactiveBgClass}`}
                             onClick={() => setTimerDuration(25)}
                         >
                             25 dəqiqə
@@ -485,20 +498,24 @@ const Index = () => {
                     <div className="times w-full mt-10">
                         <div className="flex flex-col sm:flex-row justify-center items-center text-center gap-6">
                             <div className="flex flex-col items-center">
-                                <span className="text-6xl md:text-9xl text-black font-bold">{formatTime(timeLeft).split(':')[0]}</span>
-                                <span className="text-gray-600 text-sm">Dəqiqə</span>
+                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>{formatTime(timeLeft).split(':')[0]}</span>
+                                <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Dəqiqə</span>
                             </div>
-                            <div className="text-6xl md:text-9xl text-gray-600">:</div>
+                            <div className={`text-6xl md:text-9xl ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>:</div>
                             <div className="flex flex-col items-center">
-                                <span className="text-6xl md:text-9xl text-black font-bold">{formatTime(timeLeft).split(':')[1]}</span>
-                                <span className="text-gray-600 text-sm">Saniyə</span>
+                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>{formatTime(timeLeft).split(':')[1]}</span>
+                                <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Saniyə</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="flex justify-center mt-10 w-full">
                         <button
-                            className="border border-black text-black px-6 py-3 rounded-xl text-lg font-semibold hover:text-white hover:bg-black transition duration-300"
+                            className={`border px-6 py-3 rounded-xl text-lg font-semibold transition duration-300
+                                ${isDarkMode
+                                    ? "border-white text-white hover:text-black hover:bg-white"
+                                    : "border-black text-black hover:text-white hover:bg-black"
+                                }`}
                             onClick={handleStartPause}
                             disabled={loading === 'pending' || (timeLeft === 0 && initialTime === 0 && !currentTimer)}
                         >
@@ -507,50 +524,50 @@ const Index = () => {
                     </div>
 
                     <div className="flex justify-center items-center mt-4 flex-wrap gap-4">
-                        <div className="flex flex-col items-center group">
-                            <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Şəkil Yüklə</div>
-                            <ImageIcon className='cursor-pointer' onClick={triggerFileInput} size={28} color="black" />
-                        </div>
+                        {/* ImageSelector komponenti burada əlavə olunub */}
+                       
 
                         <div className="flex flex-col items-center group">
-                            <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Tarixçə</div>
-                            <History className='cursor-pointer' onClick={toggleSidebar} size={28} color="black" />
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Tarixçə</div>
+                            <History className='cursor-pointer' onClick={toggleSidebar} size={28} color={iconColor} />
                         </div>
 
                         {!isCurrentlyFullScreen ? (
                             <div className="flex flex-col items-center group">
-                                <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Tam Ekran</div>
-                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color="black" />
+                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Tam Ekran</div>
+                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color={iconColor} />
                             </div>
                         ) : (
                             <div className="flex flex-col items-center group">
-                                <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Tam Ekrandan Çıx</div>
-                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color="black" />
+                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Tam Ekrandan Çıx</div>
+                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color={iconColor} />
                             </div>
                         )}
 
                         <div className="flex flex-col items-center group">
-                            <div className="border border-black opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap text-black">Sıfırla</div>
-                            <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color="black" />
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Sıfırla</div>
+                            <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color={iconColor} />
                         </div>
                     </div>
 
-                    {loading === 'pending' && <p className="text-black mt-4">Əməliyyat icra olunur...</p>}
+                    <ImageSelector onImageSelect={handleImageSelect} currentBackgroundImage={backgroundImage} isDarkMode={isDarkMode} />
+
+                    {loading === 'pending' && <p className={`mt-4 ${textColorClass}`}>Əməliyyat icra olunur...</p>}
                     {error && <p className="text-red-600 mt-4">Xəta: {error}</p>}
-                    {tracksLoading === 'pending' && <p className="text-gray-600 mt-2">Musiqi yüklənir...</p>}
+                    {tracksLoading === 'pending' && <p className={`mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Musiqi yüklənir...</p>}
                     {tracksError && <p className="text-red-600 mt-2">Musiqi xətası: {tracksError}</p>}
 
                     {currentTimer && (
-                        <div className="mt-8 text-center bg-white p-4 rounded-xl shadow-lg border border-gray-300">
+                        <div className={`mt-8 text-center p-4 rounded-xl shadow-lg border ${infoBoxBg}`}>
                             <h3 className="text-green-600 text-xl font-semibold mb-2">Cari Taymer Sessiyası</h3>
-                            <p className="text-black">Ad: {currentTimer.name || 'Ad yoxdur'}</p>
-                            <p className="text-gray-600">ID: {currentTimer._id}</p>
-                            <p className="text-gray-600">Seçilən Müddət: {currentTimer.selectedDuration} dəqiqə</p>
-                            <p className="text-gray-600">Başlama Vaxtı: {new Date(currentTimer.startTime).toLocaleString('az-AZ')}</p>
-                            <p className="text-black font-bold">Status: {currentTimer.status}</p>
-                            <p className="text-gray-600">İşləyən Vaxt: {formatTime(currentTimer.elapsedTime)}</p>
-                            {currentTimer.totalPausedTime > 0 && <p className="text-gray-600">Ümumi Fasilə Vaxtı: {formatTime(currentTimer.totalPausedTime)}</p>}
-                            {currentTimer.endTime && <p className="text-gray-600">Bitmə Vaxtı: {new Date(currentTimer.endTime).toLocaleString('az-AZ')}</p>}
+                            <p>Ad: {currentTimer.name || 'Ad yoxdur'}</p>
+                            <p className="text-gray-400">ID: {currentTimer._id}</p>
+                            <p className="text-gray-400">Seçilən Müddət: {currentTimer.selectedDuration} dəqiqə</p>
+                            <p className="text-gray-400">Başlama Vaxtı: {new Date(currentTimer.startTime).toLocaleString('az-AZ')}</p>
+                            <p className="font-bold">Status: {currentTimer.status}</p>
+                            <p className="text-gray-400">İşləyən Vaxt: {formatTime(currentTimer.elapsedTime)}</p>
+                            {currentTimer.totalPausedTime > 0 && <p className="text-gray-400">Ümumi Fasilə Vaxtı: {formatTime(currentTimer.totalPausedTime)}</p>}
+                            {currentTimer.endTime && <p className="text-gray-400">Bitmə Vaxtı: {new Date(currentTimer.endTime).toLocaleString('az-AZ')}</p>}
                         </div>
                     )}
                 </div>
