@@ -90,7 +90,7 @@ export default function Navbar() {
 
   return (
     <nav className={`${isDarkMode ? "dark" : ""}`}>
-      <div className={`w-full fixed p-5 z-50 shadow border-b ${isDarkMode ? " opacity-70 bg-black via-gray-300 to-black" : "bg-transparent border-b-indigo-100"} ${textColorClass}`}>
+      <div className={`w-full fixed px-8 py-5 z-50 shadow border-b ${isDarkMode ? " opacity-70 bg-black via-gray-300 to-black" : "bg-transparent border-b-indigo-100"} ${textColorClass}`}>
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold">
             AION
@@ -107,7 +107,7 @@ export default function Navbar() {
           </button>
 
           <div className="flex items-center space-x-4 relative">
-            <div className="relative" ref={langDropdownRef}>
+            {/* <div className="relative" ref={langDropdownRef}>
               <button
                 onClick={() => setShowLangDropdown(!showLangDropdown)}
                 className={`p-2 rounded-full transition ${hoverBgColorClass} ${textColorClass}`}
@@ -126,7 +126,7 @@ export default function Navbar() {
                   ))}
                 </div>
               )}
-            </div>
+            </div> */}
 
             <button
               onClick={toggleDarkMode}

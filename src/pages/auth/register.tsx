@@ -111,7 +111,7 @@ const Register: React.FC = () => {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <h2 className={`text-3xl font-light text-amber-200 mb-2`}>
+          <h2 className={`text-3xl font-light text-violet-400 mb-2`}>
             Sign up to <span className={`font-bold ${titleColorClass}`}>AION</span>
           </h2>
           <p className={`${subtitleColorClass}`}>Your AI workspace</p>

@@ -1,7 +1,10 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    // ... digər experimental konfiqurasiyalarınız
+    transpilePackages: ['arzu-toast-modal'],
+  },
+  // ... digər konfiqurasiyalarınız
 };
 
-export default nextConfig;
+module.exports = nextConfig;

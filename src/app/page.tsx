@@ -32,14 +32,14 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full sm:w-auto justify-center items-center">
           <Link
             href="/auth/login"
-            className={`text-center rounded-2xl font-bold py-3 px-6 w-full sm:w-40 transition btn-gradient-hover ${isDarkMode ? linkBtnDarkClass : linkBtnLightClass}`}
+            className={`text-center rounded-2xl border border-black font-bold py-3 px-6 w-full sm:w-40 transition btn-gradient-hover ${isDarkMode ? linkBtnDarkClass : linkBtnLightClass}`}
           >
             Get Started
           </Link>
 
           <Link
             href="/workspace"
-            className={`text-center rounded-2xl font-bold py-3 px-6 w-full sm:w-40 transition btn-gradient-hover ${isDarkMode ? linkBtnDarkClass : linkBtnLightClass}`}
+            className={`text-center rounded-2xl border border-black font-bold py-3 px-6 w-full sm:w-40 transition btn-gradient-hover ${isDarkMode ? linkBtnDarkClass : linkBtnLightClass}`}
           >
             Work Space
           </Link>
