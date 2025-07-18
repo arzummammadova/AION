@@ -5,15 +5,15 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
-import { LoginInput, loginSchema } from '@/schema/auth';
-import {  useToast } from 'arzu-toast-modal';
+import { useRouter } from 'next/navigation'; // Next.js App Router üçün useRouter
+import { LoginInput, loginSchema } from '@/schema/auth'; // Şemanızın yolu düzgün olduğundan əmin olun
+import { useToast } from 'arzu-toast-modal'; // Toast komponentinizin yolu düzgün olduğundan əmin olun
 
 export default function Login() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const { showToast } = useToast(); // toast funksiyası
+  const { showToast } = useToast();
 
   const {
     register,
@@ -24,6 +24,7 @@ export default function Login() {
   });
 
   useEffect(() => {
+    // Tema ayarlarını yükləyir
     const storedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -35,6 +36,7 @@ export default function Login() {
       document.documentElement.classList.remove('dark');
     }
 
+    // URL parametrlərini yoxlayır və uyğun toast göstərir
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('alert') === 'not-logged-in') {
       showToast({
@@ -44,43 +46,50 @@ export default function Login() {
         duration: 4000,
         position: 'top-right',
       });
-      router.replace('/auth/login', undefined, { shallow: true });
+      // `shallow: true` App Router-də dəstəklənmir, sadəcə URL-i keçirik.
+      // Bu səhifədə bir redirect olduğuna görə, browser history-dən bu alert URL-ini təmizləmək üçün ideal yerdir.
+      router.replace('/auth/login'); 
     }
-  }, [router, showToast]);
+  }, [router, showToast]); // `router` və `showToast` dependencyləri əlavə edildi
 
   const onSubmit = async (data: LoginInput) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        credentials: 'include', // Cookie-lərin sorğu ilə göndərilməsini təmin edir
         body: JSON.stringify(data),
       });
 
       const result = await res.json();
 
-      if (!res.ok) throw new Error(result.message || 'Xəta baş verdi');
+      if (!res.ok) {
+        // Backenddən gələn xəta mesajını istifadə edir
+        throw new Error(result.message || 'Giriş xətası baş verdi.');
+      }
 
       showToast({
         type: 'success',
         title: 'Uğurlu giriş!',
-        message: 'Sistəmə uğurla daxil oldunuz.',
+        message: 'Sistemə uğurla daxil oldunuz.',
         duration: 1000,
         position: 'top-right',
       });
 
+      // Uğurlu girişdən sonra istifadəçini iş sahəsinə yönləndirir
       router.push('/workspace');
     } catch (err: any) {
       showToast({
         type: 'error',
         title: 'Giriş alınmadı!',
-        message: err.message || 'Xəta baş verdi.',
+        message: err.message || 'Bilinməyən xəta baş verdi.',
         duration: 5000,
         position: 'top-right',
       });
     }
   };
 
+  // Tema əsasında CSS klassları
   const bgColorClass = isDarkMode
     ? "bg-black bg-[url('/images/aionbg.png')] bg-no-repeat bg-cover bg-center"
     : "bg-[url('/images/aionbg.png')] bg-no-repeat bg-cover bg-center";

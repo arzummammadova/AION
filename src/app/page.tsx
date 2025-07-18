@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from "@/redux/store/store";
+import { RootState, AppDispatch } from "@/redux/store";
 import { useEffect } from "react";
 
 export default function Home() {

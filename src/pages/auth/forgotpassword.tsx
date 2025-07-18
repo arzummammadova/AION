@@ -1,7 +1,7 @@
 "use client";
 import { setTheme, toggleTheme } from '@/redux/features/themeSlice'; // toggleTheme-ə ehtiyac yoxdur bu səhifədə, amma ziyanı yoxdur
 import { forgotPasswordUser } from '@/redux/features/userSlice';
-import { AppDispatch, RootState } from '@/redux/store/store';
+import { AppDispatch, RootState } from '@/redux/store';
 import { forgotPasswordUserSchema } from '@/schema/auth';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';

@@ -5,7 +5,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import axios from 'axios';
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/redux/store/store';
+import { AppDispatch, RootState } from '@/redux/store';
 import { setTheme } from '@/redux/features/themeSlice';
 import {  useToast } from 'arzu-toast-modal';
 

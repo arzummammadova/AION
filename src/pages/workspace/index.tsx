@@ -5,7 +5,7 @@ import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/redux/store/store';
+import { AppDispatch, RootState } from '@/redux/store';
 import {
     startTimerSession,
     pauseTimerSession,

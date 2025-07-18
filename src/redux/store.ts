@@ -3,10 +3,10 @@ import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
 
 // Reducer'lərinizi import edin
-import userReducer from '../features/userSlice';
-import trackReducer from '../features/trackSlice';
-import timerReducer from '../features/timerSlice';
-import themeReducer from '../features/themeSlice'; // Bu, isDarkMode state'inizi saxlayır
+import userReducer from './features/userSlice';
+import trackReducer from './features/trackSlice';
+import timerReducer from './features/timerSlice';
+import themeReducer from './features/themeSlice'; // Bu, isDarkMode state'inizi saxlayır
 
 // Bütün reducer'ləri birləşdirin
 const rootReducer = combineReducers({

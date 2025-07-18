@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import '../app/globals.css';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { persistor, store } from '@/redux/store/store';
+import { persistor, store } from '@/redux/store';
 import { ToastProvider } from 'arzu-toast-modal'; // ✨ ToastProvider'ı import edin
 
 export default function App({ Component, pageProps }: AppProps) {

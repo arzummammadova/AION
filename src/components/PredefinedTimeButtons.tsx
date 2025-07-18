@@ -1,7 +1,7 @@
 // components/PredefinedTimeButtons.tsx
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store/store';
+import { RootState } from '@/redux/store';
 import { Clock } from 'lucide-react'; // Saat ikonunu əlavə edirik
 
 interface PredefinedTimeButtonsProps {

@@ -5,7 +5,7 @@ import { FiMenu, FiX, FiGlobe } from "react-icons/fi";
 
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "@/redux/store/store";
+import { AppDispatch, RootState } from "@/redux/store";
 import { fetchUser, logoutUser } from "@/redux/features/userSlice";
 import { useEffect, useState, useRef } from "react";
 import { setTheme } from "@/redux/features/themeSlice";
