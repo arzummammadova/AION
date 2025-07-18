@@ -6,11 +6,15 @@ import { otpVerify } from '@/redux/features/userSlice';
 import { useRouter } from 'next/navigation'; 
 
 const OtpVerify = () => {
-  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  // const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const [otpValues, setOtpValues] = useState(Array(6).fill(''));
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
-  const email = searchParams.get('email'); 
+  const email = searchParams ? searchParams.get('email') : null;
+
+  // const email = searchParams.get('email'); 
   const router = useRouter(); 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -68,12 +72,14 @@ const OtpVerify = () => {
                 <input
                   key={i}
                   ref={el => inputRefs.current[i] = el}
+
+                  // ref={el => inputRefs.current[i] = el}
                   onChange={(e) => handleChange(e, i)}
                   type="text"
                   inputMode='numeric'
                   maxLength={1}
                   value={otpValues[i]}
-                  className='border w-12 h-12 rounded-2xl border-white text-center text-black font-bold text-lg'
+                  className='border w-12 h-12 rounded-2xl border-white text-center text-white font-bold text-lg'
                 />
               ))
             }
