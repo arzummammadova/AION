@@ -27,22 +27,20 @@ export const fetchUser = createAsyncThunk('user/fetchUser', async (_, thunkAPI) 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
       credentials: 'include',
     })
-
     if (!res.ok) throw new Error('İstifadəçi tapılmadı')
     return await res.json()
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.message)
   }
 })
-export const logoutUser=createAsyncThunk('user/logoutUser', async (_, thunkAPI) => {
+export const logoutUser = createAsyncThunk('user/logoutUser', async (_, thunkAPI) => {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
       credentials: 'include',
     })
     if (!res.ok) throw new Error('İstifadəçi tapılmadı')
-    return
-    
-  } catch (err:any) {
+    return // No payload needed for logout success
+  } catch (err: any) {
     return thunkAPI.rejectWithValue(err.message)
   }
 })
