@@ -1,9 +1,9 @@
-// src/pages/workspace/index.tsx
+// pages/index.tsx
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
-import { Maximize, Minimize2, RotateCcw, History, Edit } from 'lucide-react';
+import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store/store';
 import {
@@ -20,8 +20,11 @@ import {
 import SessionNameModal from '@/components/SessionNameModal';
 import HistorySidebar from '@/components/HistorySidebar';
 import AudioPlayer from '@/components/AudioPlayer';
-import ImageSelector from '@/components/ImageSelector'; // Yeni import
+import SettingsModal from '@/components/SettingsModal';
+import CustomTimeModal from '@/components/CustomTimeModal';
+import PredefinedTimeButtons from '@/components/PredefinedTimeButtons';
 import { getTracks } from '@/redux/features/trackSlice';
+import { useToast } from 'arzu-toast-modal';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
     const isAuthenticated = context.req.cookies.token;
@@ -46,15 +49,23 @@ const Index = () => {
     const { currentTimer, timerSessions, loading, error } = useSelector((state: RootState) => state.timer);
     const { tracks: audioTracksFromRedux, loading: tracksLoading, error: tracksError } = useSelector((state: RootState) => state.tracks);
     const { isDarkMode } = useSelector((state: RootState) => state.theme);
+    const { showToast } = useToast();
 
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [initialTime, setInitialTime] = useState<number>(0);
     const [isCurrentlyFullScreen, setIsCurrentlyFullScreen] = useState<boolean>(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+    const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState<boolean>(false);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
     const [isNameModalAdOpen, setIsNameModalAdOpen] = useState<boolean>(false);
     const [confirmedSessionName, setConfirmedSessionName] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
+    // State for custom time inputs, including hours
+    const [customHours, setCustomHours] = useState<number | ''>(''); // New state
+    const [customMinutes, setCustomMinutes] = useState<number | ''>('');
+    const [customSeconds, setCustomSeconds] = useState<number | ''>('');
+    const [isCustomTimeSelected, setIsCustomTimeSelected] = useState<boolean>(false);
+    const [isCustomTimeModalOpen, setIsCustomTimeModalOpen] = useState<boolean>(false);
 
     const fullScreenRef = useRef<HTMLDivElement>(null);
     const tenSecondWarningSound = useRef<HTMLAudioElement | null>(null);
@@ -136,11 +147,35 @@ const Index = () => {
             if (currentTimer.name) {
                 setConfirmedSessionName(currentTimer.name);
             }
+            const predefinedDurationsInSeconds = [0.5 * 60, 10 * 60, 25 * 60];
+            const currentTimerDurationInSeconds = currentTimer.selectedDuration * 60;
+
+            if (!predefinedDurationsInSeconds.includes(currentTimerDurationInSeconds)) {
+                setIsCustomTimeSelected(true);
+                // Calculate hours, minutes and remaining seconds for display
+                const totalSeconds = currentTimer.selectedDuration * 60;
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = Math.round(totalSeconds % 60);
+
+                setCustomHours(hours);
+                setCustomMinutes(minutes);
+                setCustomSeconds(seconds);
+            } else {
+                setIsCustomTimeSelected(false);
+                setCustomHours(''); // Clear custom hours
+                setCustomMinutes('');
+                setCustomSeconds('');
+            }
         } else {
             setTimeLeft(0);
             setInitialTime(0);
             setIsRunning(false);
             setConfirmedSessionName('');
+            setCustomHours(''); // Clear custom hours when no timer
+            setCustomMinutes('');
+            setCustomSeconds('');
+            setIsCustomTimeSelected(false);
         }
     }, [currentTimer]);
 
@@ -158,7 +193,13 @@ const Index = () => {
             }
 
         } else if (timeLeft === 0 && initialTime > 0 && isRunning) {
-            alert("Vaxt bitdi!");
+            showToast({
+                type: 'success',
+                title: 'Uğurlu',
+                message: 'Vaxt bitdi!',
+                duration: 3000,
+                position: 'top-right',
+            });
             setIsRunning(false);
             if (interval) {
                 clearInterval(interval);
@@ -178,7 +219,7 @@ const Index = () => {
                 clearInterval(interval);
             }
         };
-    }, [isRunning, timeLeft, initialTime, dispatch, currentTimer]);
+    }, [isRunning, timeLeft, initialTime, dispatch, currentTimer, showToast]);
 
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -195,10 +236,21 @@ const Index = () => {
         };
     }, []);
 
-    const formatTime = (seconds: number) => {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    // Updated: formatTime to include hours (HH:MM:SS format)
+    const formatTime = (totalSeconds: number) => {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const paddedHours = hours.toString().padStart(2, '0');
+        const paddedMinutes = minutes.toString().padStart(2, '0');
+        const paddedSeconds = seconds.toString().padStart(2, '0');
+
+        if (hours > 0) {
+            return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
+        } else {
+            return `${paddedMinutes}:${paddedSeconds}`;
+        }
     };
 
     const setTimerDuration = async (minutes: number) => {
@@ -217,11 +269,66 @@ const Index = () => {
         dispatch(clearCurrentTimer());
         setConfirmedSessionName('');
         dispatch(getUserTimerSessions());
+        setIsCustomTimeSelected(false);
+        setCustomHours(''); // Clear custom hours
+        setCustomMinutes('');
+        setCustomSeconds('');
+    };
+
+    // Updated: handleSetCustomDuration to accept hours, minutes, seconds
+    const handleSetCustomDuration = async (hours: number, minutes: number, seconds: number) => {
+        const totalSeconds = (isNaN(hours) ? 0 : hours * 3600) +
+                             (isNaN(minutes) ? 0 : minutes * 60) +
+                             (isNaN(seconds) ? 0 : seconds);
+
+        if (totalSeconds <= 0) {
+            showToast({
+                type: 'error',
+                title: 'Xəta',
+                message: 'Zəhmət olmasa etibarlı bir müddət daxil edin (saat, dəqiqə və ya saniyə).',
+                duration: 3000,
+                position: 'top-right',
+            });
+            return;
+        }
+
+        if (isRunning || (currentTimer && currentTimer.status === 'paused')) {
+            if (!window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?")) {
+                return;
+            }
+            if (currentTimer?._id) {
+                await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime: initialTimeRef.current - timeLeftRef.current }));
+            }
+        }
+
+        setTimeLeft(totalSeconds);
+        setInitialTime(totalSeconds);
+        setIsRunning(false);
+        dispatch(clearCurrentTimer());
+        setConfirmedSessionName('');
+        dispatch(getUserTimerSessions());
+        setIsCustomTimeSelected(true);
+        setCustomHours(hours); // Update state to reflect chosen custom time
+        setCustomMinutes(minutes); // Update state to reflect chosen custom time
+        setCustomSeconds(seconds); // Update state to reflect chosen custom time
+        showToast({
+            type: 'success',
+            title: 'Uğurlu',
+            message: `${formatTime(totalSeconds)} olaraq təyin edildi.`,
+            duration: 3000,
+            position: 'top-right',
+        });
     };
 
     const handleConfirmNameFromModal = (name: string) => {
         setConfirmedSessionName(name);
-        alert(`Sessiya adı təsdiqləndi: "${name}"`);
+        showToast({
+            type: 'success',
+            title: 'Uğurlu',
+            message: `Sessiya adı təsdiqləndi: "${name}"`,
+            duration: 3000,
+            position: 'top-right',
+        });
         if (currentTimer && currentTimer.name !== name) {
             dispatch(updateTimerSession({ timerId: currentTimer._id, name: name }));
         }
@@ -229,21 +336,39 @@ const Index = () => {
 
     const handleStartPause = async () => {
         if (timeLeft === 0 && initialTime === 0) {
-            alert("Zəhmət olmasa bir taymer müddəti seçin.");
+            showToast({
+                type: 'error',
+                title: 'Xəta',
+                message: 'Zəhmət olmasa bir taymer müddəti seçin.',
+                duration: 3000,
+                position: 'top-right',
+            });
             return;
         }
 
         if (!isRunning) {
             const actionResult = await dispatch(
                 startTimerSession({
-                    selectedDuration: initialTime / 60,
+                    selectedDuration: initialTime / 60, // Ensure this is in minutes for the backend
                     name: confirmedSessionName || `Sessiya ${new Date().toLocaleString('az-AZ')}`
                 })
             );
             if (startTimerSession.fulfilled.match(actionResult)) {
-                alert("Taymer başladı/davam etdirildi!");
+                showToast({
+                    type: 'success',
+                    title: 'Uğurlu',
+                    message: 'Taymer başladı/davam etdirildi!',
+                    duration: 3000,
+                    position: 'top-right',
+                });
             } else {
-                alert(`Taymeri başlatarkən xəta: ${actionResult.payload}`);
+                showToast({
+                    type: 'error',
+                    title: 'Xəta',
+                    message: `Taymeri başlatarkən xəta: ${actionResult.payload}`,
+                    duration: 3000,
+                    position: 'top-right',
+                });
             }
         } else {
             if (currentTimer?._id) {
@@ -251,12 +376,30 @@ const Index = () => {
                 const actionResult = await dispatch(pauseTimerSession({ timerId: currentTimer._id, elapsedTime }));
 
                 if (pauseTimerSession.fulfilled.match(actionResult)) {
-                    alert("Taymer fasiləyə verildi!");
+                    showToast({
+                        type: 'success',
+                        title: 'Uğurlu',
+                        message: 'Taymer fasiləyə verildi!',
+                        duration: 3000,
+                        position: 'top-right',
+                    });
                 } else {
-                    alert(`Taymeri fasiləyə verərkən xəta: ${actionResult.payload}`);
+                    showToast({
+                        type: 'error',
+                        title: 'Xəta',
+                        message: `Taymeri fasiləyə verərken xəta: ${actionResult.payload}`,
+                        duration: 3000,
+                        position: 'top-right',
+                    });
                 }
             } else {
-                alert("Taymer fasiləyə verilə bilmədi (Cari sessiya tapılmadı).");
+                showToast({
+                    type: 'error',
+                    title: 'Xəta',
+                    message: 'Taymer fasiləyə verilə bilmədi (Cari sessiya tapılmadı).',
+                    duration: 3000,
+                    position: 'top-right',
+                });
             }
         }
     };
@@ -268,15 +411,33 @@ const Index = () => {
                 const actionResult = await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime }));
 
                 if (stopTimerSession.fulfilled.match(actionResult)) {
-                    alert("Taymer sessiyası dayandırıldı!");
+                    showToast({
+                        type: 'success',
+                        title: 'Uğurlu',
+                        message: 'Taymer sessiyası dayandırıldı!',
+                        duration: 3000,
+                        position: 'top-right',
+                    });
                     dispatch(clearCurrentTimer());
                     dispatch(getUserTimerSessions());
                 } else {
-                    alert(`Taymeri dayandırarkən xəta: ${actionResult.payload}`);
+                    showToast({
+                        type: 'error',
+                        title: 'Xəta',
+                        message: `Taymeri dayandırarkən xəta: ${actionResult.payload}`,
+                        duration: 3000,
+                        position: 'top-right',
+                    });
                 }
             }
         } else {
-            alert("Hal-hazırda dayandırıla biləcək bir taymer yoxdur.");
+            showToast({
+                type: 'info',
+                title: 'Məlumat',
+                message: 'Hal-hazırda dayandırıla biləcək bir taymer yoxdur.',
+                duration: 3000,
+                position: 'top-right',
+            });
         }
     };
 
@@ -291,24 +452,50 @@ const Index = () => {
         setIsRunning(false);
         dispatch(clearCurrentTimer());
         setConfirmedSessionName('');
-        alert("Taymer sıfırlandı.");
+        showToast({
+            type: 'success',
+            title: 'Uğurlu',
+            message: 'Taymer sıfırlandı.',
+            duration: 3000,
+            position: 'top-right',
+        });
         dispatch(getUserTimerSessions());
+        setIsCustomTimeSelected(false);
+        setCustomHours('');
+        setCustomMinutes('');
+        setCustomSeconds('');
     };
 
     const handleDeleteTimer = async (timerId: string) => {
         if (window.confirm("Bu taymer sessiyasını silmək istədiyinizə əminsiniz?")) {
             const actionResult = await dispatch(deleteTimerSession(timerId));
             if (deleteTimerSession.fulfilled.match(actionResult)) {
-                alert("Taymer sessiyası uğurla silindi.");
+                showToast({
+                    type: 'success',
+                    title: 'Uğurlu',
+                    message: 'Taymer sessiyası uğurla silindi.',
+                    duration: 3000,
+                    position: 'top-right',
+                });
                 if (currentTimer && currentTimer._id === timerId) {
                     dispatch(clearCurrentTimer());
                     setTimeLeft(0);
                     setInitialTime(0);
                     setIsRunning(false);
                     setConfirmedSessionName('');
+                    setIsCustomTimeSelected(false);
+                    setCustomHours('');
+                    setCustomMinutes('');
+                    setCustomSeconds('');
                 }
             } else {
-                alert(`Taymer sessiyası silinərkən xəta: ${actionResult.payload}`);
+                showToast({
+                    type: 'error',
+                    title: 'Xəta',
+                    message: `Taymer sessiyası silinərkən xəta: ${actionResult.payload}`,
+                    duration: 3000,
+                    position: 'top-right',
+                });
             }
         }
     };
@@ -317,16 +504,34 @@ const Index = () => {
         const newName = prompt("Sessiyanın yeni adını daxil edin:", currentName);
         if (newName !== null && newName.trim() !== "") {
             if (newName.trim() === currentName.trim()) {
-                alert("Ad dəyişməyib.");
+                showToast({
+                    type: 'info',
+                    title: 'Məlumat',
+                    message: 'Ad dəyişməyib.',
+                    duration: 3000,
+                    position: 'top-right',
+                });
                 return;
             }
             const actionResult = await dispatch(updateTimerSession({ timerId, name: newName.trim() }));
 
             if (updateTimerSession.fulfilled.match(actionResult)) {
-                alert("Sessiya adı uğurla yeniləndi.");
+                showToast({
+                    type: 'success',
+                    title: 'Uğurlu',
+                    message: 'Sessiya adı uğurla yeniləndi.',
+                    duration: 3000,
+                    position: 'top-right',
+                });
                 dispatch(getUserTimerSessions());
             } else {
-                alert(`Sessiya adı yenilənərkən xəta: ${actionResult.payload}`);
+                showToast({
+                    type: 'error',
+                    title: 'Xəta',
+                    message: `Sessiya adı yenilənərkən xəta: ${actionResult.payload}`,
+                    duration: 3000,
+                    position: 'top-right',
+                });
             }
         }
     };
@@ -375,8 +580,16 @@ const Index = () => {
         };
     }, []);
 
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
+    const toggleHistorySidebar = () => {
+        setIsHistorySidebarOpen(!isHistorySidebarOpen);
+    };
+
+    const openSettingsModal = () => {
+        setIsSettingsModalOpen(true);
+    };
+
+    const closeSettingsModal = () => {
+        setIsSettingsModalOpen(false);
     };
 
     const getButtonText = () => {
@@ -400,7 +613,6 @@ const Index = () => {
         localStorage.setItem('pomodoroBackground', imageUrl);
     };
 
-    // Dark/Light Mode üçün dinamik siniflər
     const mainContainerBgStyle = isDarkMode
         ? {
             backgroundColor: 'black',
@@ -421,8 +633,6 @@ const Index = () => {
 
 
     const textColorClass = isDarkMode ? "text-white" : "text-black";
-    const tabActiveBgClass = isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black';
-    const tabInactiveBgClass = isDarkMode ? 'border-white text-white' : 'border-black text-black';
     const iconColor = isDarkMode ? "white" : "black";
     const infoBoxBg = isDarkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-white border-gray-300 text-black";
 
@@ -437,8 +647,8 @@ const Index = () => {
             />
 
             <HistorySidebar
-                isOpen={isSidebarOpen}
-                toggleSidebar={toggleSidebar}
+                isOpen={isHistorySidebarOpen}
+                toggleSidebar={toggleHistorySidebar}
                 timerSessions={timerSessions}
                 loading={loading}
                 error={error}
@@ -448,14 +658,32 @@ const Index = () => {
                 isDarkMode={isDarkMode}
             />
 
+            <SettingsModal
+                isOpen={isSettingsModalOpen}
+                onClose={closeSettingsModal}
+                onImageSelect={handleImageSelect}
+                currentBackgroundImage={backgroundImage}
+                isDarkMode={isDarkMode}
+            />
+
+            <CustomTimeModal
+                isOpen={isCustomTimeModalOpen}
+                onClose={() => setIsCustomTimeModalOpen(false)}
+                // Pass hours, minutes, seconds to the modal
+                onSetCustomDuration={handleSetCustomDuration}
+                currentHours={customHours} // New prop
+                currentMinutes={customMinutes}
+                currentSeconds={customSeconds}
+            />
+
             <div
                 ref={fullScreenRef}
                 style={mainContainerBgStyle}
-                className={`flex flex-col items-center justify-center px-4 w-full  transition-colors duration-300`}
+                className={`flex flex-col items-center justify-center px-4 w-full transition-colors duration-300`}
             >
                 <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center px-4">
                     <div className={`text-2xl md:text-5xl text-center mt-6 md:mt-12 font-bold ${textColorClass}`}>
-                        Choose your minutes
+                        Choose your time
                     </div>
 
                     {confirmedSessionName && (
@@ -474,36 +702,36 @@ const Index = () => {
                         </div>
                     )}
 
-                    <div className="tabs flex flex-col md:flex-row justify-center mt-6 gap-4 w-full items-center">
-                        <a
-                            className={`tab border px-5 py-3 rounded-xl text-md w-40 text-center cursor-pointer ${initialTime === 0.5 * 60 ? tabActiveBgClass : tabInactiveBgClass}`}
-                            onClick={() => setTimerDuration(0.5)}
-                        >
-                            1 dəqiqə
-                        </a>
-                        <a
-                            className={`tab border px-5 py-3 rounded-xl text-md w-40 text-center cursor-pointer ${initialTime === 10 * 60 ? tabActiveBgClass : tabInactiveBgClass}`}
-                            onClick={() => setTimerDuration(10)}
-                        >
-                            10 dəqiqə
-                        </a>
-                        <a
-                            className={`tab border px-5 py-3 rounded-xl text-md w-40 text-center cursor-pointer ${initialTime === 25 * 60 ? tabActiveBgClass : tabInactiveBgClass}`}
-                            onClick={() => setTimerDuration(25)}
-                        >
-                            25 dəqiqə
-                        </a>
-                    </div>
+                    <PredefinedTimeButtons
+                        setTimerDuration={setTimerDuration}
+                        setIsCustomTimeModalOpen={setIsCustomTimeModalOpen}
+                        initialTime={initialTime}
+                        isCustomTimeSelected={isCustomTimeSelected}
+                    />
 
                     <div className="times w-full mt-10">
                         <div className="flex flex-col sm:flex-row justify-center items-center text-center gap-6">
+                            {/* Display Hours if present, otherwise only Minutes:Seconds */}
+                            {formatTime(timeLeft).split(':').length === 3 && (
+                                <>
+                                    <div className="flex flex-col items-center">
+                                        <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>{formatTime(timeLeft).split(':')[0]}</span>
+                                        <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Saat</span>
+                                    </div>
+                                    <div className={`text-6xl md:text-9xl ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>:</div>
+                                </>
+                            )}
                             <div className="flex flex-col items-center">
-                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>{formatTime(timeLeft).split(':')[0]}</span>
+                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>
+                                    {formatTime(timeLeft).split(':').length === 3 ? formatTime(timeLeft).split(':')[1] : formatTime(timeLeft).split(':')[0]}
+                                </span>
                                 <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Dəqiqə</span>
                             </div>
                             <div className={`text-6xl md:text-9xl ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>:</div>
                             <div className="flex flex-col items-center">
-                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>{formatTime(timeLeft).split(':')[1]}</span>
+                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>
+                                    {formatTime(timeLeft).split(':').length === 3 ? formatTime(timeLeft).split(':')[2] : formatTime(timeLeft).split(':')[1]}
+                                </span>
                                 <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Saniyə</span>
                             </div>
                         </div>
@@ -524,33 +752,33 @@ const Index = () => {
                     </div>
 
                     <div className="flex justify-center items-center mt-4 flex-wrap gap-4">
-                        {/* ImageSelector komponenti burada əlavə olunub */}
-                       
+                        <div className="flex flex-col items-center group">
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Ayarlar</div>
+                            <Settings className='cursor-pointer' onClick={openSettingsModal} size={28} color={iconColor} />
+                        </div>
 
                         <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Tarixçə</div>
-                            <History className='cursor-pointer' onClick={toggleSidebar} size={28} color={iconColor} />
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tarixçə</div>
+                            <History className='cursor-pointer' onClick={toggleHistorySidebar} size={28} color={iconColor} />
                         </div>
 
                         {!isCurrentlyFullScreen ? (
                             <div className="flex flex-col items-center group">
-                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Tam Ekran</div>
+                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekran</div>
                                 <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color={iconColor} />
                             </div>
                         ) : (
                             <div className="flex flex-col items-center group">
-                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Tam Ekrandan Çıx</div>
+                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekrandan Çıx</div>
                                 <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color={iconColor} />
                             </div>
                         )}
 
                         <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${tabInactiveBgClass}`}>Sıfırla</div>
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Sıfırla</div>
                             <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color={iconColor} />
                         </div>
                     </div>
-
-                    <ImageSelector onImageSelect={handleImageSelect} currentBackgroundImage={backgroundImage} isDarkMode={isDarkMode} />
 
                     {loading === 'pending' && <p className={`mt-4 ${textColorClass}`}>Əməliyyat icra olunur...</p>}
                     {error && <p className="text-red-600 mt-4">Xəta: {error}</p>}

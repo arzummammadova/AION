@@ -65,7 +65,7 @@ export default function Login() {
         type: 'success',
         title: 'Uğurlu giriş!',
         message: 'Sistəmə uğurla daxil oldunuz.',
-        duration: 3000,
+        duration: 1000,
         position: 'top-right',
       });
 

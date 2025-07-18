@@ -10,8 +10,11 @@ interface ImageSelectorProps {
 
 const predefinedImages = [
     '/images/aionbg.png', // Default image
-    '/images/aion_2.jpg',
+    '/images/aion_2.png',
     '/images/aion_3.jpg',
+    '/images/aionbg-4.webp',
+    '/images/bg-ion.png',
+    '/images/bg-3.png'
     // Add more predefined image paths as needed
 ];
 

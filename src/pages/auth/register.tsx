@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store/store';
 import { setTheme } from '@/redux/features/themeSlice';
+import {  useToast } from 'arzu-toast-modal';
 
 interface FormData {
   username: string;
@@ -17,6 +18,7 @@ interface FormData {
 const Register: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isDarkMode } = useSelector((state: RootState) => state.theme);
+  const { showToast } = useToast(); // toast funksiyası
 
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState<FormData>({
@@ -80,10 +82,25 @@ const Register: React.FC = () => {
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, form);
 
-      setMessage(res.data.message);
+      // setMessage(res.data.message);
+
+      showToast({
+        type: 'success',
+        title: 'Ugurlu',
+        message:res.data.message,
+        duration: 3000,
+        position: 'top-right',
+      });
       setForm({ username: '', email: '', password: '' });
     } catch (err: any) {
-      setMessage(err.response?.data?.message || 'Xəta baş verdi');
+      // setMessage(err.response?.data?.message || 'Xəta baş verdi');
+      showToast({
+        type: 'error',
+        title: 'error',
+        message: err.response?.data?.message,
+        duration: 1000,
+        position: 'top-right',
+      });
     }
   };
 
