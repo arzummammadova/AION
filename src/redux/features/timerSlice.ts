@@ -3,21 +3,25 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { TimerSession } from '@/types'; // <-- Buradan idxal edin
 
-interface TimerSession {
-    _id: string;
-    userId: string;
-    selectedDuration: number;
-    startTime: string; 
-    endTime: string | null;
-    elapsedTime: number;
-    status: 'running' | 'paused' | 'stopped' | 'completed' | 'reset'; 
-    pauseStartTime: string | null; 
-    totalPausedTime: number; 
-    createdAt: string;
-    updatedAt: string;
-    name?: string;
-}
+
+// interface TimerSession {
+//     _id: string;
+//     userId: string;
+//     selectedDuration: number;
+//     startTime: string; 
+//     // endTime: string | null;
+//     endTime: string | null | undefined; // BURANI DƏYİŞDİRİN! Həm null, həm də undefined dəstəklənsin
+
+//     elapsedTime: number;
+//     status: 'running' | 'paused' | 'stopped' | 'completed' | 'reset'; 
+//     pauseStartTime: string | null; 
+//     totalPausedTime: number; 
+//     createdAt: string;
+//     updatedAt: string;
+//     name?: string;
+// }
 
 interface TimerState {
     currentTimer: TimerSession | null;

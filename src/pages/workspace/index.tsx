@@ -1,6 +1,6 @@
-// pages/index.tsx
+// pages/workspace/index.tsx
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
@@ -24,6 +24,8 @@ import SettingsModal from '@/components/SettingsModal';
 import CustomTimeModal from '@/components/CustomTimeModal';
 import PredefinedTimeButtons from '@/components/PredefinedTimeButtons';
 import { getTracks } from '@/redux/features/trackSlice';
+// Assuming you'll add an action for reordering tracks in trackSlice
+import { updateTracksOrder } from '@/redux/features/trackSlice'; // Make sure to create this action if it doesn't exist
 import { useToast } from 'arzu-toast-modal';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -60,8 +62,7 @@ const Index = () => {
     const [isNameModalAdOpen, setIsNameModalAdOpen] = useState<boolean>(false);
     const [confirmedSessionName, setConfirmedSessionName] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
-    // State for custom time inputs, including hours
-    const [customHours, setCustomHours] = useState<number | ''>(''); // New state
+    const [customHours, setCustomHours] = useState<number | ''>('');
     const [customMinutes, setCustomMinutes] = useState<number | ''>('');
     const [customSeconds, setCustomSeconds] = useState<number | ''>('');
     const [isCustomTimeSelected, setIsCustomTimeSelected] = useState<boolean>(false);
@@ -152,7 +153,6 @@ const Index = () => {
 
             if (!predefinedDurationsInSeconds.includes(currentTimerDurationInSeconds)) {
                 setIsCustomTimeSelected(true);
-                // Calculate hours, minutes and remaining seconds for display
                 const totalSeconds = currentTimer.selectedDuration * 60;
                 const hours = Math.floor(totalSeconds / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -163,7 +163,7 @@ const Index = () => {
                 setCustomSeconds(seconds);
             } else {
                 setIsCustomTimeSelected(false);
-                setCustomHours(''); // Clear custom hours
+                setCustomHours('');
                 setCustomMinutes('');
                 setCustomSeconds('');
             }
@@ -172,7 +172,7 @@ const Index = () => {
             setInitialTime(0);
             setIsRunning(false);
             setConfirmedSessionName('');
-            setCustomHours(''); // Clear custom hours when no timer
+            setCustomHours('');
             setCustomMinutes('');
             setCustomSeconds('');
             setIsCustomTimeSelected(false);
@@ -236,7 +236,6 @@ const Index = () => {
         };
     }, []);
 
-    // Updated: formatTime to include hours (HH:MM:SS format)
     const formatTime = (totalSeconds: number) => {
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -270,12 +269,11 @@ const Index = () => {
         setConfirmedSessionName('');
         dispatch(getUserTimerSessions());
         setIsCustomTimeSelected(false);
-        setCustomHours(''); // Clear custom hours
+        setCustomHours('');
         setCustomMinutes('');
         setCustomSeconds('');
     };
 
-    // Updated: handleSetCustomDuration to accept hours, minutes, seconds
     const handleSetCustomDuration = async (hours: number, minutes: number, seconds: number) => {
         const totalSeconds = (isNaN(hours) ? 0 : hours * 3600) +
                              (isNaN(minutes) ? 0 : minutes * 60) +
@@ -308,9 +306,9 @@ const Index = () => {
         setConfirmedSessionName('');
         dispatch(getUserTimerSessions());
         setIsCustomTimeSelected(true);
-        setCustomHours(hours); // Update state to reflect chosen custom time
-        setCustomMinutes(minutes); // Update state to reflect chosen custom time
-        setCustomSeconds(seconds); // Update state to reflect chosen custom time
+        setCustomHours(hours);
+        setCustomMinutes(minutes);
+        setCustomSeconds(seconds);
         showToast({
             type: 'success',
             title: 'Uğurlu',
@@ -349,7 +347,7 @@ const Index = () => {
         if (!isRunning) {
             const actionResult = await dispatch(
                 startTimerSession({
-                    selectedDuration: initialTime / 60, // Ensure this is in minutes for the backend
+                    selectedDuration: initialTime / 60,
                     name: confirmedSessionName || `Sessiya ${new Date().toLocaleString('az-AZ')}`
                 })
             );
@@ -613,6 +611,17 @@ const Index = () => {
         localStorage.setItem('pomodoroBackground', imageUrl);
     };
 
+    // New: Callback for handling track reordering from AudioPlayer
+    const handleTracksReorder = useCallback((reorderedTracks: any[]) => { // Use 'any[]' or define a specific Track type if you have it
+        // This function will be called when tracks are reordered in the AudioPlayer
+        // You should dispatch a Redux action here to persist the new order
+        console.log('Tracks reordered:', reorderedTracks);
+        // Example: dispatch(updateTracksOrder(reorderedTracks));
+        // You'll need to implement the updateTracksOrder action in your trackSlice.ts
+        // This action would then update the 'tracks' state in your Redux store
+        dispatch(updateTracksOrder(reorderedTracks)); // Dispatch the action to update Redux state
+    }, [dispatch]);
+
     const mainContainerBgStyle = isDarkMode
         ? {
             backgroundColor: 'black',
@@ -669,9 +678,8 @@ const Index = () => {
             <CustomTimeModal
                 isOpen={isCustomTimeModalOpen}
                 onClose={() => setIsCustomTimeModalOpen(false)}
-                // Pass hours, minutes, seconds to the modal
                 onSetCustomDuration={handleSetCustomDuration}
-                currentHours={customHours} // New prop
+                currentHours={customHours}
                 currentMinutes={customMinutes}
                 currentSeconds={customSeconds}
             />
@@ -711,7 +719,6 @@ const Index = () => {
 
                     <div className="times w-full mt-10">
                         <div className="flex flex-col sm:flex-row justify-center items-center text-center gap-6">
-                            {/* Display Hours if present, otherwise only Minutes:Seconds */}
                             {formatTime(timeLeft).split(':').length === 3 && (
                                 <>
                                     <div className="flex flex-col items-center">
@@ -801,7 +808,12 @@ const Index = () => {
                 </div>
             </div>
 
-            <AudioPlayer tracks={audioTracksFromRedux} />
+            {/* Updated AudioPlayer component with new props */}
+            <AudioPlayer
+                tracks={audioTracksFromRedux}
+                onTracksReorder={handleTracksReorder} 
+                isDarkMode={isDarkMode} 
+            />
         </div>
     );
 };

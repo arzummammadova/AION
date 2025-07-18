@@ -18,7 +18,9 @@ const ResetPassword = () => {
   const searchParams = useSearchParams(); // URL parametrlərini almaq üçün
   const router = useRouter(); // Səhifələr arasında yönləndirmək üçün
 
-  const email = searchParams.get('email'); // URL-dən email parametrisini alırıq
+  // const email = searchParams.get('email'); // URL-dən email parametrisini alırıq
+  const email = searchParams ? searchParams.get('email') : null;
+
   const { loading, error } = useSelector((state: RootState) => state.user); // Redux store-dan loading və error state-lərini alırıq
 
   const handleSubmit = async (e: React.FormEvent) => {

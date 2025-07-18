@@ -1,17 +1,20 @@
 import React from 'react';
 import { X, Edit, Trash2 } from 'lucide-react';
+import { TimerSession } from '@/types'; // <-- Buradan idxal edin
 
 // TimerSession interfeysini buraya da əlavə edirik, çünki bu komponent də istifadə edəcək
-interface TimerSession {
-    _id: string;
-    selectedDuration: number;
-    startTime: string;
-    endTime?: string;
-    status: 'running' | 'paused' | 'completed' | 'stopped';
-    elapsedTime: number;
-    totalPausedTime: number;
-    name?: string;
-}
+// interface TimerSession {
+//     _id: string;
+//     selectedDuration: number;
+//     startTime: string;
+//     // endTime?: string;
+//     endTime: string | null | undefined; // BURANI DƏYİŞDİRİN! Həm null, həm də undefined dəstəklənsin
+
+//     status: 'running' | 'paused' | 'completed' | 'stopped';
+//     elapsedTime: number;
+//     totalPausedTime: number;
+//     name?: string;
+// }
 
 interface HistorySidebarProps {
     isOpen: boolean;

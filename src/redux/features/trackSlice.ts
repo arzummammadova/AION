@@ -41,7 +41,12 @@ export const getTracks = createAsyncThunk<Track[], void>(
 const trackSlice = createSlice({
     name: 'tracks',
     initialState,
-    reducers: {}, // Reducer-lər yoxdursa belə saxlayın
+    reducers: {
+        // Yeni reducer: Mahnıların sırasını yeniləmək üçün
+        updateTracksOrder: (state, action: PayloadAction<Track[]>) => {
+            state.tracks = action.payload;
+        },
+    },
     extraReducers: (builder) => {
         builder
             .addCase(getTracks.pending, (state) => {
@@ -60,4 +65,7 @@ const trackSlice = createSlice({
     },
 });
 
-export default trackSlice.reducer; // Reducer-i export etməyi unutmayın
+// Yeni reducer-i export edin
+export const { updateTracksOrder } = trackSlice.actions;
+
+export default trackSlice.reducer;

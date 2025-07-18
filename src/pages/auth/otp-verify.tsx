@@ -71,7 +71,9 @@ const OtpVerify = () => {
               [...Array(6)].map((_, i) => (
                 <input
                   key={i}
-                  ref={el => inputRefs.current[i] = el}
+                  ref={(el: HTMLInputElement | null) => {
+                    inputRefs.current[i] = el;
+                  }}
 
                   // ref={el => inputRefs.current[i] = el}
                   onChange={(e) => handleChange(e, i)}
