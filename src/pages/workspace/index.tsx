@@ -1,7 +1,5 @@
-// pages/workspace/index.tsx
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
-import { GetServerSideProps } from 'next';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,6 +14,7 @@ import {
     clearCurrentTimer,
     updateTimerSession,
 } from '@/redux/features/timerSlice';
+import { fetchUser, logoutUser } from '@/redux/features/userSlice'; // fetchUser və logoutUser-ı import edin
 
 import SessionNameModal from '@/components/SessionNameModal';
 import HistorySidebar from '@/components/HistorySidebar';
@@ -24,30 +23,24 @@ import SettingsModal from '@/components/SettingsModal';
 import CustomTimeModal from '@/components/CustomTimeModal';
 import PredefinedTimeButtons from '@/components/PredefinedTimeButtons';
 import { getTracks } from '@/redux/features/trackSlice';
-// Assuming you'll add an action for reordering tracks in trackSlice
-import { updateTracksOrder } from '@/redux/features/trackSlice'; // Make sure to create this action if it doesn't exist
+import { updateTracksOrder } from '@/redux/features/trackSlice';
 import { useToast } from 'arzu-toast-modal';
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-    const isAuthenticated = context.req.cookies.token;
-
-    if (!isAuthenticated) {
-        return {
-            redirect: {
-                destination: '/auth/login?alert=not-logged-in',
-                permanent: false,
-            },
-        };
-    }
-
-    return {
-        props: {},
-    };
-};
+// getServerSideProps funksiyasını sildiyiniz üçün bu hissəyə ehtiyac qalmır.
+// Əgər tamamilə silmək istəmirsinizsə, aşağıdakı kimi boş saxlaya bilərsiniz:
+// export const getServerSideProps: GetServerSideProps = async (context) => {
+//     return {
+//         props: {},
+//     };
+// };
 
 const Index = () => {
     const dispatch: AppDispatch = useDispatch();
     const router = useRouter();
+
+    // Redux store-dan istifadəçi state-ini də əlavə edin
+    const { user, loading: userLoading, error: userError } = useSelector((state: RootState) => state.user);
+
     const { currentTimer, timerSessions, loading, error } = useSelector((state: RootState) => state.timer);
     const { tracks: audioTracksFromRedux, loading: tracksLoading, error: tracksError } = useSelector((state: RootState) => state.tracks);
     const { isDarkMode } = useSelector((state: RootState) => state.theme);
@@ -87,6 +80,28 @@ const Index = () => {
         timeLeftRef.current = timeLeft;
     }, [timeLeft]);
 
+    // --- Autentifikasiya Yoxlaması üçün Yeni Hissə ---
+    useEffect(() => {
+        // Əgər istifadəçi məlumatları hələ yüklənməyibsə (ilk səhifə yüklənməsi)
+        // və ya yüklenməsi uğurla bitibsə, lakin user obyekti boşdursa (əvvəlki session yoxdur)
+        if (userLoading === 'idle' || (userLoading === 'succeeded' && !user)) {
+            dispatch(fetchUser()); // İstifadəçi məlumatlarını çəkməyə çalış
+        }
+    }, [dispatch, user, userLoading]);
+
+    useEffect(() => {
+        // Yükləmə bitibsə (succeeded və ya failed) və istifadəçi yoxdursa
+        if (userLoading === 'succeeded' && !user) {
+            // Yaxud userLoading 'failed' halında da yönləndirə bilərsiniz
+            // if ((userLoading === 'succeeded' && !user) || userLoading === 'failed') {
+            
+            // İstifadəçini login səhifəsinə yönləndir
+            // Eyni səhifəyə təkrar yönləndirmənin qarşısını almaq üçün asPath yoxlaması
+            if (router.asPath !== '/auth/login?alert=not-logged-in') {
+                router.push('/auth/login?alert=not-logged-in');
+            }
+        }
+    }, [user, userLoading, userError, router]);
     const initialTimeRef = useRef(initialTime);
     useEffect(() => {
         initialTimeRef.current = initialTime;
