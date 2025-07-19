@@ -96,38 +96,13 @@ export default function Navbar() {
             AION
           </Link>
 
+          {/* Desktop navigation links - hidden on small screens */}
           <div className="hidden md:flex items-center space-x-6">
             <Link href="/" className={hoverTextColorClass}>Ana Səhifə</Link>
-            <Link href="/about" className={hoverTextColorClass}>About</Link>
-            <Link href="/contact" className={hoverTextColorClass}>Contact</Link>
           </div>
 
-          <button className="md:hidden" onClick={() => setShowMobileMenu(!showMobileMenu)}>
-            {showMobileMenu ? <FiX size={26} /> : <FiMenu size={26} />}
-          </button>
-
+          {/* Group for action buttons (theme toggle, profile/login, mobile menu button) */}
           <div className="flex items-center space-x-4 relative">
-            {/* <div className="relative" ref={langDropdownRef}>
-              <button
-                onClick={() => setShowLangDropdown(!showLangDropdown)}
-                className={`p-2 rounded-full transition ${hoverBgColorClass} ${textColorClass}`}
-              >
-                <FiGlobe size={22} />
-              </button>
-              {showLangDropdown && (
-                <div className={`absolute right-0 mt-2 w-24 rounded-md shadow-lg z-30 ${dropdownBgColorClass} ${dropdownBorderColorClass}`}>
-                  {["AZ", "EN", "RU"].map((lang) => (
-                    <button
-                      key={lang}
-                      className={`block w-full text-left px-4 py-2 text-sm ${textColorClass} ${dropdownItemHoverBgClass} ${dropdownItemHoverTextColorClass}`}
-                    >
-                      {lang}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div> */}
-
             <button
               onClick={toggleDarkMode}
               className={`p-2 rounded-full transition ${hoverBgColorClass} ${textColorClass}`}
@@ -143,7 +118,8 @@ export default function Navbar() {
                   className={`flex items-center space-x-2 ${hoverTextColorClass}`}
                 >
                   <CgProfile size={24} />
-                  <span className="hidden sm:inline">{greeting}, {user.username}</span>
+                  {/* Removed 'hidden sm:inline' to show username on all screen sizes */}
+                  <span className=""> {user.username}</span>
                 </button>
                 {showDropdown && (
                   <div className={`absolute right-0 top-12 w-48 rounded-xl shadow-2xl py-2 z-30 ${dropdownBgColorClass} ${dropdownBorderColorClass}`}>
@@ -172,14 +148,18 @@ export default function Navbar() {
                 <Link href="/auth/register" className={hoverTextColorClass}>Qeydiyyat</Link>
               </div>
             )}
+
+            {/* Burger icon specifically for mobile, now grouped with other action buttons */}
+            <button className="md:hidden" onClick={() => setShowMobileMenu(!showMobileMenu)}>
+              {showMobileMenu ? <FiX size={26} /> : <FiMenu size={26} />}
+            </button>
           </div>
         </div>
 
+        {/* Mobile Menu - shown when burger icon is clicked */}
         {showMobileMenu && (
           <div className={`md:hidden mt-4 space-y-3 px-4 ${textColorClass}`}>
             <Link href="/" className={`block ${hoverTextColorClass}`}>Ana Səhifə</Link>
-            <Link href="/about" className={`block ${hoverTextColorClass}`}>About</Link>
-            <Link href="/contact" className={`block ${hoverTextColorClass}`}>Contact</Link>
             {!user && (
               <>
                 <Link href="/auth/login" className={`block ${hoverTextColorClass}`}>Giriş</Link>

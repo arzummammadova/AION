@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/redux/store";
 import { useEffect } from "react";
+import ModelViewer from "@/components/ModelViewer";
 
 export default function Home() {
   const dispatch = useDispatch<AppDispatch>();
@@ -22,7 +23,7 @@ export default function Home() {
       {imageOverlayClass && <div className={imageOverlayClass}></div>}
       <div className="flex justify-center items-center flex-col mx-auto h-screen px-6 relative z-10">
         <h1 className={`text-3xl md:text-7xl text-center font-bold ${titleColorClass}`}>
-          Welcome to AION salam
+          Welcome to AION
         </h1>
 
         <p className={`text-center mt-4 text-sm md:text-base max-w-md md:max-w-xl ${subtitleColorClass}`}>
@@ -44,15 +45,19 @@ export default function Home() {
             Work Space
           </Link>
         </div>
+        <ModelViewer/>
 
-        <Image
+        {/* <Image
           src={arrowIconSrc}
           width={48}
           height={48}
           alt="Arrow icon"
           className="mx-auto mt-10"
-        />
+        /> */}
+        
       </div>
+
+    
     </div>
   );
 }

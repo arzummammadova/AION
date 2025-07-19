@@ -1,7 +1,7 @@
 // pages/workspace/index.tsx
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
-import { GetServerSideProps } from 'next';
+// import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -276,8 +276,8 @@ const Index = () => {
 
     const handleSetCustomDuration = async (hours: number, minutes: number, seconds: number) => {
         const totalSeconds = (isNaN(hours) ? 0 : hours * 3600) +
-                             (isNaN(minutes) ? 0 : minutes * 60) +
-                             (isNaN(seconds) ? 0 : seconds);
+            (isNaN(minutes) ? 0 : minutes * 60) +
+            (isNaN(seconds) ? 0 : seconds);
 
         if (totalSeconds <= 0) {
             showToast({
@@ -690,7 +690,7 @@ const Index = () => {
                 className={`flex flex-col items-center justify-center px-4 w-full transition-colors duration-300`}
             >
                 <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center px-4">
-                    <div className={`text-2xl md:text-5xl text-center mt-6 md:mt-12 font-bold ${textColorClass}`}>
+                    <div className={`text-2xl md:text-6xl text-center mt-6 md:mt-12 font-bold ${textColorClass}`}>
                         Choose your time
                     </div>
 
@@ -718,25 +718,30 @@ const Index = () => {
                     />
 
                     <div className="times w-full mt-10">
-                        <div className="flex flex-col sm:flex-row justify-center items-center text-center gap-6">
+                        <div className="flex justify-center items-center text-center gap-6">
                             {formatTime(timeLeft).split(':').length === 3 && (
                                 <>
                                     <div className="flex flex-col items-center">
-                                        <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>{formatTime(timeLeft).split(':')[0]}</span>
+                                        {/* Adjusted text size for extra small screens (xs:text-6xl) */}
+                                        <span className={`text-6xl sm:text-6xl md:text-9xl font-bold ${textColorClass}`}>{formatTime(timeLeft).split(':')[0]}</span>
                                         <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Saat</span>
                                     </div>
-                                    <div className={`text-6xl md:text-9xl ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>:</div>
+                                    {/* Adjusted text size for extra small screens (xs:text-6xl) */}
+                                    <div className={`text-6xl sm:text-6xl md:text-9xl ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>:</div>
                                 </>
                             )}
                             <div className="flex flex-col items-center">
-                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>
+                                {/* Adjusted text size for extra small screens (xs:text-6xl) */}
+                                <span className={`text-6xl sm:text-6xl md:text-9xl font-bold ${textColorClass}`}>
                                     {formatTime(timeLeft).split(':').length === 3 ? formatTime(timeLeft).split(':')[1] : formatTime(timeLeft).split(':')[0]}
                                 </span>
                                 <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Dəqiqə</span>
                             </div>
-                            <div className={`text-6xl md:text-9xl ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>:</div>
+                            {/* Adjusted text size for extra small screens (xs:text-6xl) */}
+                            <div className={`text-6xl sm:text-6xl md:text-9xl ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>:</div>
                             <div className="flex flex-col items-center">
-                                <span className={`text-6xl md:text-9xl font-bold ${textColorClass}`}>
+                                {/* Adjusted text size for extra small screens (xs:text-6xl) */}
+                                <span className={`text-6xl sm:text-6xl md:text-9xl font-bold ${textColorClass}`}>
                                     {formatTime(timeLeft).split(':').length === 3 ? formatTime(timeLeft).split(':')[2] : formatTime(timeLeft).split(':')[1]}
                                 </span>
                                 <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Saniyə</span>
@@ -746,8 +751,10 @@ const Index = () => {
 
                     <div className="flex justify-center mt-10 w-full">
                         <button
-                            className={`border px-6 py-3 rounded-xl text-lg font-semibold transition duration-300
-                                ${isDarkMode
+                            className={`border px-4 py-2 rounded-lg text-base font-semibold 
+                    md:px-6 md:py-3 md:rounded-xl md:text-lg 
+                    transition duration-300
+                    ${isDarkMode
                                     ? "border-white text-white hover:text-black hover:bg-white"
                                     : "border-black text-black hover:text-white hover:bg-black"
                                 }`}
@@ -758,41 +765,41 @@ const Index = () => {
                         </button>
                     </div>
 
-                    <div className="flex justify-center items-center mt-4 flex-wrap gap-4">
-                        <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Ayarlar</div>
-                            <Settings className='cursor-pointer' onClick={openSettingsModal} size={28} color={iconColor} />
-                        </div>
+                    <div className="flex justify-center items-center mt-4 flex-wrap gap-2 md:gap-4">
+    <div className="flex flex-col items-center group">
+        <div className={`border opacity-0 group-hover:opacity-100 rounded-lg px-2 py-1 text-xs whitespace-nowrap md:rounded-2xl md:px-3 md:py-2 md:text-sm ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Ayarlar</div>
+        <Settings className='cursor-pointer' onClick={openSettingsModal} size={24} color={iconColor} />
+    </div>
 
-                        <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tarixçə</div>
-                            <History className='cursor-pointer' onClick={toggleHistorySidebar} size={28} color={iconColor} />
-                        </div>
+    <div className="flex flex-col items-center group">
+        <div className={`border opacity-0 group-hover:opacity-100 rounded-lg px-2 py-1 text-xs whitespace-nowrap md:rounded-2xl md:px-3 md:py-2 md:text-sm ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tarixçə</div>
+        <History className='cursor-pointer' onClick={toggleHistorySidebar} size={24} color={iconColor} />
+    </div>
 
-                        {!isCurrentlyFullScreen ? (
-                            <div className="flex flex-col items-center group">
-                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekran</div>
-                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color={iconColor} />
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center group">
-                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekrandan Çıx</div>
-                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color={iconColor} />
-                            </div>
-                        )}
+    {!isCurrentlyFullScreen ? (
+        <div className="flex flex-col items-center group">
+            <div className={`border opacity-0 group-hover:opacity-100 rounded-lg px-2 py-1 text-xs whitespace-nowrap md:rounded-2xl md:px-3 md:py-2 md:text-sm ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekran</div>
+            <Maximize className='cursor-pointer' onClick={handleFullScreen} size={24} color={iconColor} />
+        </div>
+    ) : (
+        <div className="flex flex-col items-center group">
+            <div className={`border opacity-0 group-hover:opacity-100 rounded-lg px-2 py-1 text-xs whitespace-nowrap md:rounded-2xl md:px-3 md:py-2 md:text-sm ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekrandan Çıx</div>
+            <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={24} color={iconColor} />
+        </div>
+    )}
 
-                        <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Sıfırla</div>
-                            <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color={iconColor} />
-                        </div>
-                    </div>
+    <div className="flex flex-col items-center group">
+        <div className={`border opacity-0 group-hover:opacity-100 rounded-lg px-2 py-1 text-xs whitespace-nowrap md:rounded-2xl md:px-3 md:py-2 md:text-sm ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Sıfırla</div>
+        <RotateCcw className='cursor-pointer' onClick={handleReset} size={24} color={iconColor} />
+    </div>
+</div>
 
                     {loading === 'pending' && <p className={`mt-4 ${textColorClass}`}>Əməliyyat icra olunur...</p>}
                     {error && <p className="text-red-600 mt-4">Xəta: {error}</p>}
                     {tracksLoading === 'pending' && <p className={`mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Musiqi yüklənir...</p>}
                     {tracksError && <p className="text-red-600 mt-2">Musiqi xətası: {tracksError}</p>}
 
-                    {currentTimer && (
+                    {/* {currentTimer && (
                         <div className={`mt-8 text-center p-4 rounded-xl shadow-lg border ${infoBoxBg}`}>
                             <h3 className="text-green-600 text-xl font-semibold mb-2">Cari Taymer Sessiyası</h3>
                             <p>Ad: {currentTimer.name || 'Ad yoxdur'}</p>
@@ -804,15 +811,15 @@ const Index = () => {
                             {currentTimer.totalPausedTime > 0 && <p className="text-gray-400">Ümumi Fasilə Vaxtı: {formatTime(currentTimer.totalPausedTime)}</p>}
                             {currentTimer.endTime && <p className="text-gray-400">Bitmə Vaxtı: {new Date(currentTimer.endTime).toLocaleString('az-AZ')}</p>}
                         </div>
-                    )}
+                    )} */}
                 </div>
             </div>
 
             {/* Updated AudioPlayer component with new props */}
             <AudioPlayer
                 tracks={audioTracksFromRedux}
-                onTracksReorder={handleTracksReorder} 
-                isDarkMode={isDarkMode} 
+                onTracksReorder={handleTracksReorder}
+                isDarkMode={isDarkMode}
             />
         </div>
     );
