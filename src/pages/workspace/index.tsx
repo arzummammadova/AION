@@ -27,25 +27,30 @@ import { getTracks } from '@/redux/features/trackSlice';
 import { updateTracksOrder } from '@/redux/features/trackSlice';
 import { useToast } from 'arzu-toast-modal';
 
+// getServerSideProps funksiyası server tərəfində işləyir və səhifənin render olunmasından əvvəl autentifikasiyanı yoxlayır.
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    // Log all cookies received by the server
-    console.log('--- getServerSideProps executed ---');
-    console.log('Request URL:', context.req.url);
-    console.log('All received cookies:', context.req.cookies);
-
+    // Gələn sorğunun cookie-lərini yoxlayırıq.
+    // Bu hissənin deployda işləməsi üçün backend-dən gələn cookie-nin
+    // 'secure: true' və 'sameSite: 'none'' parametrləri ilə düzgün təyin olunması vacibdir.
+    // Həmçinin, Next.js tətbiqinizin də HTTPS üzərindən işlədiyinə əmin olun.
     const isAuthenticated = context.req.cookies.token;
 
+    // Konsola log yazaraq cookie-nin gəlib-gəlmədiyini yoxlaya bilərsiniz.
+    // Bu loglar deploy platformanızın loglarında görünəcək.
+    console.log('getServerSideProps: Gələn cookie-lər:', context.req.cookies);
+    console.log('getServerSideProps: Token tapıldı:', !!isAuthenticated);
+
     if (!isAuthenticated) {
-        console.log('Authentication token not found in cookies. Redirecting to login.');
+        // Əgər token yoxdursa, istifadəçini login səhifəsinə yönləndiririk.
         return {
             redirect: {
                 destination: '/auth/login?alert=not-logged-in',
-                permanent: false,
+                permanent: false, // Müvəqqəti yönləndirmə
             },
         };
     }
 
-    console.log('Authentication token found. User is authenticated.');
+    // Əgər token varsa, səhifənin render olunmasına icazə veririk.
     return {
         props: {},
     };
@@ -76,7 +81,7 @@ const Index = () => {
 
     const fullScreenRef = useRef<HTMLDivElement>(null);
     const tenSecondWarningSound = useRef<HTMLAudioElement | null>(null);
-    const endSound = useRef<HTMLAudioElement | null>(tenSecondWarningSound.current ? tenSecondWarningSound.current.cloneNode() as HTMLAudioElement : null); // Ensure endSound is also initialized, cloned from a base if necessary
+    const endSound = useRef<HTMLAudioElement | null>(null);
 
     const isRunningRef = useRef(isRunning);
     useEffect(() => {
@@ -260,7 +265,9 @@ const Index = () => {
 
     const setTimerDuration = async (minutes: number) => {
         if (isRunning || (currentTimer && currentTimer.status === 'paused')) {
-            if (!window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?")) {
+            // alert() yerinə custom modal istifadə edin
+            const confirmReset = window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?");
+            if (!confirmReset) {
                 return;
             }
             if (currentTimer?._id) {
@@ -282,8 +289,8 @@ const Index = () => {
 
     const handleSetCustomDuration = async (hours: number, minutes: number, seconds: number) => {
         const totalSeconds = (isNaN(hours) ? 0 : hours * 3600) +
-                             (isNaN(minutes) ? 0 : minutes * 60) +
-                             (isNaN(seconds) ? 0 : seconds);
+            (isNaN(minutes) ? 0 : minutes * 60) +
+            (isNaN(seconds) ? 0 : seconds);
 
         if (totalSeconds <= 0) {
             showToast({
@@ -297,7 +304,9 @@ const Index = () => {
         }
 
         if (isRunning || (currentTimer && currentTimer.status === 'paused')) {
-            if (!window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?")) {
+            // alert() yerinə custom modal istifadə edin
+            const confirmReset = window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?");
+            if (!confirmReset) {
                 return;
             }
             if (currentTimer?._id) {
@@ -410,29 +419,32 @@ const Index = () => {
 
     const handleStopTimer = async () => {
         if (currentTimer?._id && (isRunning || currentTimer.status === 'paused')) {
-            if (window.confirm("Taymeri tamamilə dayandırmaq istədiyinizə əminsiniz? Bu, sessiyanı bitirəcək.")) {
-                const elapsedTime = initialTime - timeLeft;
-                const actionResult = await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime }));
+            // alert() yerinə custom modal istifadə edin
+            const confirmStop = window.confirm("Taymeri tamamilə dayandırmaq istədiyinizə əminsiniz? Bu, sessiyanı bitirəcək.");
+            if (!confirmStop) {
+                return;
+            }
+            const elapsedTime = initialTime - timeLeft;
+            const actionResult = await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime }));
 
-                if (stopTimerSession.fulfilled.match(actionResult)) {
-                    showToast({
-                        type: 'success',
-                        title: 'Uğurlu',
-                        message: 'Taymer sessiyası dayandırıldı!',
-                        duration: 3000,
-                        position: 'top-right',
-                    });
-                    dispatch(clearCurrentTimer());
-                    dispatch(getUserTimerSessions());
-                } else {
-                    showToast({
-                        type: 'error',
-                        title: 'Xəta',
-                        message: `Taymeri dayandırarkən xəta: ${actionResult.payload}`,
-                        duration: 3000,
-                        position: 'top-right',
-                    });
-                }
+            if (stopTimerSession.fulfilled.match(actionResult)) {
+                showToast({
+                    type: 'success',
+                    title: 'Uğurlu',
+                    message: 'Taymer sessiyası dayandırıldı!',
+                    duration: 3000,
+                    position: 'top-right',
+                });
+                dispatch(clearCurrentTimer());
+                dispatch(getUserTimerSessions());
+            } else {
+                showToast({
+                    type: 'error',
+                    title: 'Xəta',
+                    message: `Taymeri dayandırarkən xəta: ${actionResult.payload}`,
+                    duration: 3000,
+                    position: 'top-right',
+                });
             }
         } else {
             showToast({
@@ -447,7 +459,9 @@ const Index = () => {
 
     const handleReset = async () => {
         if (currentTimer?._id && (isRunning || currentTimer.status === 'paused')) {
-            if (!window.confirm("Cari taymeri sıfırlamaq istədiyinizə əminsiniz? Bu, sessiyanı dayandıracaq və sıfırlayacaq.")) {
+            // alert() yerinə custom modal istifadə edin
+            const confirmReset = window.confirm("Cari taymeri sıfırlamaq istədiyinizə əminsiniz? Bu, sessiyanı dayandıracaq və sıfırlayacaq.");
+            if (!confirmReset) {
                 return;
             }
             await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime: initialTime - timeLeft }));
@@ -471,40 +485,44 @@ const Index = () => {
     };
 
     const handleDeleteTimer = async (timerId: string) => {
-        if (window.confirm("Bu taymer sessiyasını silmək istədiyinizə əminsiniz?")) {
-            const actionResult = await dispatch(deleteTimerSession(timerId));
-            if (deleteTimerSession.fulfilled.match(actionResult)) {
-                showToast({
-                    type: 'success',
-                    title: 'Uğurlu',
-                    message: 'Taymer sessiyası uğurla silindi.',
-                    duration: 3000,
-                    position: 'top-right',
-                });
-                if (currentTimer && currentTimer._id === timerId) {
-                    dispatch(clearCurrentTimer());
-                    setTimeLeft(0);
-                    setInitialTime(0);
-                    setIsRunning(false);
-                    setConfirmedSessionName('');
-                    setIsCustomTimeSelected(false);
-                    setCustomHours('');
-                    setCustomMinutes('');
-                    setCustomSeconds('');
-                }
-            } else {
-                showToast({
-                    type: 'error',
-                    title: 'Xəta',
-                    message: `Taymer sessiyası silinərkən xəta: ${actionResult.payload}`,
-                    duration: 3000,
-                    position: 'top-right',
-                });
+        // alert() yerinə custom modal istifadə edin
+        const confirmDelete = window.confirm("Bu taymer sessiyasını silmək istədiyinizə əminsiniz?");
+        if (!confirmDelete) {
+            return;
+        }
+        const actionResult = await dispatch(deleteTimerSession(timerId));
+        if (deleteTimerSession.fulfilled.match(actionResult)) {
+            showToast({
+                type: 'success',
+                title: 'Uğurlu',
+                message: 'Taymer sessiyası uğurla silindi.',
+                duration: 3000,
+                position: 'top-right',
+            });
+            if (currentTimer && currentTimer._id === timerId) {
+                dispatch(clearCurrentTimer());
+                setTimeLeft(0);
+                setInitialTime(0);
+                setIsRunning(false);
+                setConfirmedSessionName('');
+                setIsCustomTimeSelected(false);
+                setCustomHours('');
+                setCustomMinutes('');
+                setCustomSeconds('');
             }
+        } else {
+            showToast({
+                type: 'error',
+                title: 'Xəta',
+                message: `Taymer sessiyası silinərkən xəta: ${actionResult.payload}`,
+                duration: 3000,
+                position: 'top-right',
+            });
         }
     };
 
     const handleEditSessionName = async (timerId: string, currentName: string) => {
+        // prompt() yerinə custom modal istifadə edin
         const newName = prompt("Sessiyanın yeni adını daxil edin:", currentName);
         if (newName !== null && newName.trim() !== "") {
             if (newName.trim() === currentName.trim()) {
@@ -617,9 +635,15 @@ const Index = () => {
         localStorage.setItem('pomodoroBackground', imageUrl);
     };
 
-    const handleTracksReorder = useCallback((reorderedTracks: any[]) => {
+    // New: Callback for handling track reordering from AudioPlayer
+    const handleTracksReorder = useCallback((reorderedTracks: any[]) => { // Use 'any[]' or define a specific Track type if you have it
+        // This function will be called when tracks are reordered in the AudioPlayer
+        // You should dispatch a Redux action here to persist the new order
         console.log('Tracks reordered:', reorderedTracks);
-        dispatch(updateTracksOrder(reorderedTracks));
+        // Example: dispatch(updateTracksOrder(reorderedTracks));
+        // You'll need to implement the updateTracksOrder action in your trackSlice.ts
+        // This action would then update the 'tracks' state in your Redux store
+        dispatch(updateTracksOrder(reorderedTracks)); // Dispatch the action to update Redux state
     }, [dispatch]);
 
     const mainContainerBgStyle = isDarkMode
@@ -691,7 +715,7 @@ const Index = () => {
             >
                 <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center px-4">
                     <div className={`text-2xl md:text-5xl text-center mt-6 md:mt-12 font-bold ${textColorClass}`}>
-                        Choose your time
+                        Vaxtınızı seçin
                     </div>
 
                     {confirmedSessionName && (
@@ -763,7 +787,35 @@ const Index = () => {
                             <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Ayarlar</div>
                             <Settings className='cursor-pointer' onClick={openSettingsModal} size={28} color={iconColor} />
                         </div>
-                        {/* ... (rest of your JSX remains unchanged) ... */}
+
+                        <div className="flex flex-col items-center group">
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekran</div>
+                            {isCurrentlyFullScreen ? (
+                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color={iconColor} />
+                            ) : (
+                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color={iconColor} />
+                            )}
+                        </div>
+
+                        <div className="flex flex-col items-center group">
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Sıfırla</div>
+                            <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color={iconColor} />
+                        </div>
+
+                        <div className="flex flex-col items-center group">
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Keçmiş</div>
+                            <History className='cursor-pointer' onClick={toggleHistorySidebar} size={28} color={iconColor} />
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-2xl mx-auto mt-10">
+                        <AudioPlayer
+                            tracks={audioTracksFromRedux}
+                            loading={tracksLoading}
+                            error={tracksError}
+                            onTracksReorder={handleTracksReorder}
+                            isDarkMode={isDarkMode}
+                        />
                     </div>
                 </div>
             </div>
