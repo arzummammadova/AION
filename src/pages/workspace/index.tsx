@@ -1,7 +1,6 @@
 // pages/workspace/index.tsx
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
-import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,27 +26,6 @@ import { getTracks } from '@/redux/features/trackSlice';
 // Assuming you'll add an action for reordering tracks in trackSlice
 import { updateTracksOrder } from '@/redux/features/trackSlice'; // Make sure to create this action if it doesn't exist
 import { useToast } from 'arzu-toast-modal';
-// import Cookies from 'js-cookie'; // You'd need to install js-cookie
-// export const getServerSideProps: GetServerSideProps = async (context) => {
-//     const isAuthenticated = context.req.cookies.token;
-
-//     if (!isAuthenticated) {
-//         return {
-//             redirect: {
-//                 destination: '/auth/login?alert=not-logged-in',
-//                 permanent: false,
-//             },
-//         };
-//     }
-
-//     return {
-//         props: {},
-//     };
-// };
-
-
-
-
 
 const Index = () => {
    
