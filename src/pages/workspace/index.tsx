@@ -1,6 +1,7 @@
 // pages/workspace/index.tsx
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
+import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,10 +28,25 @@ import { getTracks } from '@/redux/features/trackSlice';
 import { updateTracksOrder } from '@/redux/features/trackSlice'; // Make sure to create this action if it doesn't exist
 import { useToast } from 'arzu-toast-modal';
 
-const Index = () => {
-   
+export const getServerSideProps: GetServerSideProps = async (context) => {
+    const isAuthenticated = context.req.cookies.token;
+    console.log(isAuthenticated)
 
-    
+    if (!isAuthenticated) {
+        return {
+            redirect: {
+                destination: '/auth/login?alert=not-logged-in',
+                permanent: false,
+            },
+        };
+    }
+
+    return {
+        props: {},
+    };
+};
+
+const Index = () => {
     const dispatch: AppDispatch = useDispatch();
     const router = useRouter();
     const { currentTimer, timerSessions, loading, error } = useSelector((state: RootState) => state.timer);
@@ -56,21 +72,6 @@ const Index = () => {
     const fullScreenRef = useRef<HTMLDivElement>(null);
     const tenSecondWarningSound = useRef<HTMLAudioElement | null>(null);
     const endSound = useRef<HTMLAudioElement | null>(null);
-
-
-    
-    // useEffect(() => {
-    //     const token = Cookies.get('token'); // Bu sətir artıq işləməyəcək
-
-    //     if (!token) {
-    //         router.push('/auth/login?alert=not-logged-in');
-    //     } else {
-    //         // ...
-    //     }
-    // }, [router]);
-
-
-
 
     const isRunningRef = useRef(isRunning);
     useEffect(() => {
