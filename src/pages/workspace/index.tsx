@@ -1,6 +1,6 @@
 // pages/workspace/index.tsx
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
@@ -24,33 +24,22 @@ import SettingsModal from '@/components/SettingsModal';
 import CustomTimeModal from '@/components/CustomTimeModal';
 import PredefinedTimeButtons from '@/components/PredefinedTimeButtons';
 import { getTracks } from '@/redux/features/trackSlice';
-import { updateTracksOrder } from '@/redux/features/trackSlice';
+// Assuming you'll add an action for reordering tracks in trackSlice
+import { updateTracksOrder } from '@/redux/features/trackSlice'; // Make sure to create this action if it doesn't exist
 import { useToast } from 'arzu-toast-modal';
 
-// getServerSideProps funksiyası server tərəfində işləyir və səhifənin render olunmasından əvvəl autentifikasiyanı yoxlayır.
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    // Gələn sorğunun cookie-lərini yoxlayırıq.
-    // Bu hissənin deployda işləməsi üçün backend-dən gələn cookie-nin
-    // 'secure: true' və 'sameSite: 'none'' parametrləri ilə düzgün təyin olunması vacibdir.
-    // Həmçinin, Next.js tətbiqinizin də HTTPS üzərindən işlədiyinə əmin olun.
     const isAuthenticated = context.req.cookies.token;
 
-    // Konsola log yazaraq cookie-nin gəlib-gəlmədiyini yoxlaya bilərsiniz.
-    // Bu loglar deploy platformanızın loglarında görünəcək.
-    console.log('getServerSideProps: Gələn cookie-lər:', context.req.cookies);
-    console.log('getServerSideProps: Token tapıldı:', !!isAuthenticated);
-
     if (!isAuthenticated) {
-        // Əgər token yoxdursa, istifadəçini login səhifəsinə yönləndiririk.
         return {
             redirect: {
                 destination: '/auth/login?alert=not-logged-in',
-                permanent: false, // Müvəqqəti yönləndirmə
+                permanent: false,
             },
         };
     }
 
-    // Əgər token varsa, səhifənin render olunmasına icazə veririk.
     return {
         props: {},
     };
@@ -265,9 +254,7 @@ const Index = () => {
 
     const setTimerDuration = async (minutes: number) => {
         if (isRunning || (currentTimer && currentTimer.status === 'paused')) {
-            // alert() yerinə custom modal istifadə edin
-            const confirmReset = window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?");
-            if (!confirmReset) {
+            if (!window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?")) {
                 return;
             }
             if (currentTimer?._id) {
@@ -289,8 +276,8 @@ const Index = () => {
 
     const handleSetCustomDuration = async (hours: number, minutes: number, seconds: number) => {
         const totalSeconds = (isNaN(hours) ? 0 : hours * 3600) +
-            (isNaN(minutes) ? 0 : minutes * 60) +
-            (isNaN(seconds) ? 0 : seconds);
+                             (isNaN(minutes) ? 0 : minutes * 60) +
+                             (isNaN(seconds) ? 0 : seconds);
 
         if (totalSeconds <= 0) {
             showToast({
@@ -304,9 +291,7 @@ const Index = () => {
         }
 
         if (isRunning || (currentTimer && currentTimer.status === 'paused')) {
-            // alert() yerinə custom modal istifadə edin
-            const confirmReset = window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?");
-            if (!confirmReset) {
+            if (!window.confirm("Cari taymer sessiyası aktivdir. Yeni müddət seçmək onu sıfırlayacaq. Davam edilsin?")) {
                 return;
             }
             if (currentTimer?._id) {
@@ -419,32 +404,29 @@ const Index = () => {
 
     const handleStopTimer = async () => {
         if (currentTimer?._id && (isRunning || currentTimer.status === 'paused')) {
-            // alert() yerinə custom modal istifadə edin
-            const confirmStop = window.confirm("Taymeri tamamilə dayandırmaq istədiyinizə əminsiniz? Bu, sessiyanı bitirəcək.");
-            if (!confirmStop) {
-                return;
-            }
-            const elapsedTime = initialTime - timeLeft;
-            const actionResult = await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime }));
+            if (window.confirm("Taymeri tamamilə dayandırmaq istədiyinizə əminsiniz? Bu, sessiyanı bitirəcək.")) {
+                const elapsedTime = initialTime - timeLeft;
+                const actionResult = await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime }));
 
-            if (stopTimerSession.fulfilled.match(actionResult)) {
-                showToast({
-                    type: 'success',
-                    title: 'Uğurlu',
-                    message: 'Taymer sessiyası dayandırıldı!',
-                    duration: 3000,
-                    position: 'top-right',
-                });
-                dispatch(clearCurrentTimer());
-                dispatch(getUserTimerSessions());
-            } else {
-                showToast({
-                    type: 'error',
-                    title: 'Xəta',
-                    message: `Taymeri dayandırarkən xəta: ${actionResult.payload}`,
-                    duration: 3000,
-                    position: 'top-right',
-                });
+                if (stopTimerSession.fulfilled.match(actionResult)) {
+                    showToast({
+                        type: 'success',
+                        title: 'Uğurlu',
+                        message: 'Taymer sessiyası dayandırıldı!',
+                        duration: 3000,
+                        position: 'top-right',
+                    });
+                    dispatch(clearCurrentTimer());
+                    dispatch(getUserTimerSessions());
+                } else {
+                    showToast({
+                        type: 'error',
+                        title: 'Xəta',
+                        message: `Taymeri dayandırarkən xəta: ${actionResult.payload}`,
+                        duration: 3000,
+                        position: 'top-right',
+                    });
+                }
             }
         } else {
             showToast({
@@ -459,9 +441,7 @@ const Index = () => {
 
     const handleReset = async () => {
         if (currentTimer?._id && (isRunning || currentTimer.status === 'paused')) {
-            // alert() yerinə custom modal istifadə edin
-            const confirmReset = window.confirm("Cari taymeri sıfırlamaq istədiyinizə əminsiniz? Bu, sessiyanı dayandıracaq və sıfırlayacaq.");
-            if (!confirmReset) {
+            if (!window.confirm("Cari taymeri sıfırlamaq istədiyinizə əminsiniz? Bu, sessiyanı dayandıracaq və sıfırlayacaq.")) {
                 return;
             }
             await dispatch(stopTimerSession({ timerId: currentTimer._id, elapsedTime: initialTime - timeLeft }));
@@ -485,44 +465,40 @@ const Index = () => {
     };
 
     const handleDeleteTimer = async (timerId: string) => {
-        // alert() yerinə custom modal istifadə edin
-        const confirmDelete = window.confirm("Bu taymer sessiyasını silmək istədiyinizə əminsiniz?");
-        if (!confirmDelete) {
-            return;
-        }
-        const actionResult = await dispatch(deleteTimerSession(timerId));
-        if (deleteTimerSession.fulfilled.match(actionResult)) {
-            showToast({
-                type: 'success',
-                title: 'Uğurlu',
-                message: 'Taymer sessiyası uğurla silindi.',
-                duration: 3000,
-                position: 'top-right',
-            });
-            if (currentTimer && currentTimer._id === timerId) {
-                dispatch(clearCurrentTimer());
-                setTimeLeft(0);
-                setInitialTime(0);
-                setIsRunning(false);
-                setConfirmedSessionName('');
-                setIsCustomTimeSelected(false);
-                setCustomHours('');
-                setCustomMinutes('');
-                setCustomSeconds('');
+        if (window.confirm("Bu taymer sessiyasını silmək istədiyinizə əminsiniz?")) {
+            const actionResult = await dispatch(deleteTimerSession(timerId));
+            if (deleteTimerSession.fulfilled.match(actionResult)) {
+                showToast({
+                    type: 'success',
+                    title: 'Uğurlu',
+                    message: 'Taymer sessiyası uğurla silindi.',
+                    duration: 3000,
+                    position: 'top-right',
+                });
+                if (currentTimer && currentTimer._id === timerId) {
+                    dispatch(clearCurrentTimer());
+                    setTimeLeft(0);
+                    setInitialTime(0);
+                    setIsRunning(false);
+                    setConfirmedSessionName('');
+                    setIsCustomTimeSelected(false);
+                    setCustomHours('');
+                    setCustomMinutes('');
+                    setCustomSeconds('');
+                }
+            } else {
+                showToast({
+                    type: 'error',
+                    title: 'Xəta',
+                    message: `Taymer sessiyası silinərkən xəta: ${actionResult.payload}`,
+                    duration: 3000,
+                    position: 'top-right',
+                });
             }
-        } else {
-            showToast({
-                type: 'error',
-                title: 'Xəta',
-                message: `Taymer sessiyası silinərkən xəta: ${actionResult.payload}`,
-                duration: 3000,
-                position: 'top-right',
-            });
         }
     };
 
     const handleEditSessionName = async (timerId: string, currentName: string) => {
-        // prompt() yerinə custom modal istifadə edin
         const newName = prompt("Sessiyanın yeni adını daxil edin:", currentName);
         if (newName !== null && newName.trim() !== "") {
             if (newName.trim() === currentName.trim()) {
@@ -715,7 +691,7 @@ const Index = () => {
             >
                 <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center px-4">
                     <div className={`text-2xl md:text-5xl text-center mt-6 md:mt-12 font-bold ${textColorClass}`}>
-                        Vaxtınızı seçin
+                        Choose your time
                     </div>
 
                     {confirmedSessionName && (
@@ -789,36 +765,55 @@ const Index = () => {
                         </div>
 
                         <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekran</div>
-                            {isCurrentlyFullScreen ? (
-                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color={iconColor} />
-                            ) : (
-                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color={iconColor} />
-                            )}
+                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tarixçə</div>
+                            <History className='cursor-pointer' onClick={toggleHistorySidebar} size={28} color={iconColor} />
                         </div>
+
+                        {!isCurrentlyFullScreen ? (
+                            <div className="flex flex-col items-center group">
+                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekran</div>
+                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color={iconColor} />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center group">
+                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekrandan Çıx</div>
+                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color={iconColor} />
+                            </div>
+                        )}
 
                         <div className="flex flex-col items-center group">
                             <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Sıfırla</div>
                             <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color={iconColor} />
                         </div>
+                    </div>
 
-                        <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Keçmiş</div>
-                            <History className='cursor-pointer' onClick={toggleHistorySidebar} size={28} color={iconColor} />
+                    {loading === 'pending' && <p className={`mt-4 ${textColorClass}`}>Əməliyyat icra olunur...</p>}
+                    {error && <p className="text-red-600 mt-4">Xəta: {error}</p>}
+                    {tracksLoading === 'pending' && <p className={`mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Musiqi yüklənir...</p>}
+                    {tracksError && <p className="text-red-600 mt-2">Musiqi xətası: {tracksError}</p>}
+
+                    {currentTimer && (
+                        <div className={`mt-8 text-center p-4 rounded-xl shadow-lg border ${infoBoxBg}`}>
+                            <h3 className="text-green-600 text-xl font-semibold mb-2">Cari Taymer Sessiyası</h3>
+                            <p>Ad: {currentTimer.name || 'Ad yoxdur'}</p>
+                            <p className="text-gray-400">ID: {currentTimer._id}</p>
+                            <p className="text-gray-400">Seçilən Müddət: {currentTimer.selectedDuration} dəqiqə</p>
+                            <p className="text-gray-400">Başlama Vaxtı: {new Date(currentTimer.startTime).toLocaleString('az-AZ')}</p>
+                            <p className="font-bold">Status: {currentTimer.status}</p>
+                            <p className="text-gray-400">İşləyən Vaxt: {formatTime(currentTimer.elapsedTime)}</p>
+                            {currentTimer.totalPausedTime > 0 && <p className="text-gray-400">Ümumi Fasilə Vaxtı: {formatTime(currentTimer.totalPausedTime)}</p>}
+                            {currentTimer.endTime && <p className="text-gray-400">Bitmə Vaxtı: {new Date(currentTimer.endTime).toLocaleString('az-AZ')}</p>}
                         </div>
-                    </div>
-
-                    <div className="w-full max-w-2xl mx-auto mt-10">
-                        <AudioPlayer
-                            tracks={audioTracksFromRedux}
-                            loading={tracksLoading}
-                            error={tracksError}
-                            onTracksReorder={handleTracksReorder}
-                            isDarkMode={isDarkMode}
-                        />
-                    </div>
+                    )}
                 </div>
             </div>
+
+            {/* Updated AudioPlayer component with new props */}
+            <AudioPlayer
+                tracks={audioTracksFromRedux}
+                onTracksReorder={handleTracksReorder} 
+                isDarkMode={isDarkMode} 
+            />
         </div>
     );
 };
