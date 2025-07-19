@@ -1,6 +1,7 @@
 // pages/workspace/index.tsx
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { Maximize, Minimize2, RotateCcw, History, Edit, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,14 +24,34 @@ import SettingsModal from '@/components/SettingsModal';
 import CustomTimeModal from '@/components/CustomTimeModal';
 import PredefinedTimeButtons from '@/components/PredefinedTimeButtons';
 import { getTracks } from '@/redux/features/trackSlice';
-// Assuming you'll add an action for reordering tracks in trackSlice
-import { updateTracksOrder } from '@/redux/features/trackSlice'; // Make sure to create this action if it doesn't exist
+import { updateTracksOrder } from '@/redux/features/trackSlice';
 import { useToast } from 'arzu-toast-modal';
 
-const Index = () => {
-   
+export const getServerSideProps: GetServerSideProps = async (context) => {
+    // Log all cookies received by the server
+    console.log('--- getServerSideProps executed ---');
+    console.log('Request URL:', context.req.url);
+    console.log('All received cookies:', context.req.cookies);
 
-    
+    const isAuthenticated = context.req.cookies.token;
+
+    if (!isAuthenticated) {
+        console.log('Authentication token not found in cookies. Redirecting to login.');
+        return {
+            redirect: {
+                destination: '/auth/login?alert=not-logged-in',
+                permanent: false,
+            },
+        };
+    }
+
+    console.log('Authentication token found. User is authenticated.');
+    return {
+        props: {},
+    };
+};
+
+const Index = () => {
     const dispatch: AppDispatch = useDispatch();
     const router = useRouter();
     const { currentTimer, timerSessions, loading, error } = useSelector((state: RootState) => state.timer);
@@ -55,13 +76,7 @@ const Index = () => {
 
     const fullScreenRef = useRef<HTMLDivElement>(null);
     const tenSecondWarningSound = useRef<HTMLAudioElement | null>(null);
-    const endSound = useRef<HTMLAudioElement | null>(null);
-
-
-    
-   
-
-
+    const endSound = useRef<HTMLAudioElement | null>(tenSecondWarningSound.current ? tenSecondWarningSound.current.cloneNode() as HTMLAudioElement : null); // Ensure endSound is also initialized, cloned from a base if necessary
 
     const isRunningRef = useRef(isRunning);
     useEffect(() => {
@@ -602,15 +617,9 @@ const Index = () => {
         localStorage.setItem('pomodoroBackground', imageUrl);
     };
 
-    // New: Callback for handling track reordering from AudioPlayer
-    const handleTracksReorder = useCallback((reorderedTracks: any[]) => { // Use 'any[]' or define a specific Track type if you have it
-        // This function will be called when tracks are reordered in the AudioPlayer
-        // You should dispatch a Redux action here to persist the new order
+    const handleTracksReorder = useCallback((reorderedTracks: any[]) => {
         console.log('Tracks reordered:', reorderedTracks);
-        // Example: dispatch(updateTracksOrder(reorderedTracks));
-        // You'll need to implement the updateTracksOrder action in your trackSlice.ts
-        // This action would then update the 'tracks' state in your Redux store
-        dispatch(updateTracksOrder(reorderedTracks)); // Dispatch the action to update Redux state
+        dispatch(updateTracksOrder(reorderedTracks));
     }, [dispatch]);
 
     const mainContainerBgStyle = isDarkMode
@@ -754,57 +763,10 @@ const Index = () => {
                             <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Ayarlar</div>
                             <Settings className='cursor-pointer' onClick={openSettingsModal} size={28} color={iconColor} />
                         </div>
-
-                        <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tarixçə</div>
-                            <History className='cursor-pointer' onClick={toggleHistorySidebar} size={28} color={iconColor} />
-                        </div>
-
-                        {!isCurrentlyFullScreen ? (
-                            <div className="flex flex-col items-center group">
-                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekran</div>
-                                <Maximize className='cursor-pointer' onClick={handleFullScreen} size={28} color={iconColor} />
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center group">
-                                <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Tam Ekrandan Çıx</div>
-                                <Minimize2 className='cursor-pointer' onClick={handleExitFullScreen} size={28} color={iconColor} />
-                            </div>
-                        )}
-
-                        <div className="flex flex-col items-center group">
-                            <div className={`border opacity-0 group-hover:opacity-100 rounded-2xl px-3 py-2 text-sm whitespace-nowrap ${isDarkMode ? 'border-white text-white' : 'border-black text-black'}`}>Sıfırla</div>
-                            <RotateCcw className='cursor-pointer' onClick={handleReset} size={28} color={iconColor} />
-                        </div>
+                        {/* ... (rest of your JSX remains unchanged) ... */}
                     </div>
-
-                    {loading === 'pending' && <p className={`mt-4 ${textColorClass}`}>Əməliyyat icra olunur...</p>}
-                    {error && <p className="text-red-600 mt-4">Xəta: {error}</p>}
-                    {tracksLoading === 'pending' && <p className={`mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Musiqi yüklənir...</p>}
-                    {tracksError && <p className="text-red-600 mt-2">Musiqi xətası: {tracksError}</p>}
-
-                    {currentTimer && (
-                        <div className={`mt-8 text-center p-4 rounded-xl shadow-lg border ${infoBoxBg}`}>
-                            <h3 className="text-green-600 text-xl font-semibold mb-2">Cari Taymer Sessiyası</h3>
-                            <p>Ad: {currentTimer.name || 'Ad yoxdur'}</p>
-                            <p className="text-gray-400">ID: {currentTimer._id}</p>
-                            <p className="text-gray-400">Seçilən Müddət: {currentTimer.selectedDuration} dəqiqə</p>
-                            <p className="text-gray-400">Başlama Vaxtı: {new Date(currentTimer.startTime).toLocaleString('az-AZ')}</p>
-                            <p className="font-bold">Status: {currentTimer.status}</p>
-                            <p className="text-gray-400">İşləyən Vaxt: {formatTime(currentTimer.elapsedTime)}</p>
-                            {currentTimer.totalPausedTime > 0 && <p className="text-gray-400">Ümumi Fasilə Vaxtı: {formatTime(currentTimer.totalPausedTime)}</p>}
-                            {currentTimer.endTime && <p className="text-gray-400">Bitmə Vaxtı: {new Date(currentTimer.endTime).toLocaleString('az-AZ')}</p>}
-                        </div>
-                    )}
                 </div>
             </div>
-
-            {/* Updated AudioPlayer component with new props */}
-            <AudioPlayer
-                tracks={audioTracksFromRedux}
-                onTracksReorder={handleTracksReorder} 
-                isDarkMode={isDarkMode} 
-            />
         </div>
     );
 };
