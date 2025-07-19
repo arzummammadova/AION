@@ -28,22 +28,22 @@ import { getTracks } from '@/redux/features/trackSlice';
 import { updateTracksOrder } from '@/redux/features/trackSlice'; // Make sure to create this action if it doesn't exist
 import { useToast } from 'arzu-toast-modal';
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-    const isAuthenticated = context.req.cookies.token;
+// export const getServerSideProps: GetServerSideProps = async (context) => {
+//     const isAuthenticated = context.req.cookies.token;
 
-    if (!isAuthenticated) {
-        return {
-            redirect: {
-                destination: '/auth/login?alert=not-logged-in',
-                permanent: false,
-            },
-        };
-    }
+//     if (!isAuthenticated) {
+//         return {
+//             redirect: {
+//                 destination: '/auth/login?alert=not-logged-in',
+//                 permanent: false,
+//             },
+//         };
+//     }
 
-    return {
-        props: {},
-    };
-};
+//     return {
+//         props: {},
+//     };
+// };
 
 const Index = () => {
     const dispatch: AppDispatch = useDispatch();
