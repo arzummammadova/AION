@@ -22,7 +22,7 @@ export default function Home() {
       {imageOverlayClass && <div className={imageOverlayClass}></div>}
       <div className="flex justify-center items-center flex-col mx-auto h-screen px-6 relative z-10">
         <h1 className={`text-3xl md:text-7xl text-center font-bold ${titleColorClass}`}>
-          Welcome to AION
+          Welcome to AION hii
         </h1>
 
         <p className={`text-center mt-4 text-sm md:text-base max-w-md md:max-w-xl ${subtitleColorClass}`}>
