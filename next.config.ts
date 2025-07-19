@@ -1,10 +1,8 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // ... digər experimental konfiqurasiyalarınız
     transpilePackages: ['arzu-toast-modal'],
+    middlewareSourceMaps: true, // debugging üçün
   },
-  // ... digər konfiqurasiyalarınız
 };
 
 module.exports = nextConfig;
